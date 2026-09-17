@@ -11,6 +11,7 @@ services:
     environment:
       - TZ=America/New_York
       - AR_ENABLE_DEDUPE=true
+      - AR_SKEW_WINDOW=30
     logging:
       options:
         max-size: 10m
