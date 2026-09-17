@@ -63,6 +63,10 @@ export interface PairedAircraft {
   type?: string; // ICAO aircraft type designator (e.g. "B738"), from 't' field
   adsbSourceType?: ADSBSourceType; // Best source / tracking method (adsb_icao, mlat, etc.)
   dbFlags?: number; // Bitfield: military=1, interesting=2, PIA=4, LADD=8
+  /** Source of the coordinates currently displayed on the map. */
+  positionSource: "adsb" | "acars";
+  /** Reception time of an ACARS-derived position, in Unix seconds. */
+  positionTimestamp?: number;
 
   // ACARS pairing data
   hasMessages: boolean;
@@ -77,6 +81,21 @@ export interface PairedAircraft {
    * Empty array when there are no ACARS messages.
    */
   decoderTypes: DecoderType[];
+}
+
+/**
+ * Keep ACARS-only markers recent enough to represent a useful approximate
+ * position. ACARS position reports are snapshots rather than a continuous
+ * track, so leaving them on the map indefinitely would be misleading.
+ */
+export const ACARS_POSITION_MAX_AGE_SECONDS = 30 * 60;
+
+/** Normalize live numeric fields and string-backed values restored from SQLite. */
+function toFiniteNumber(value: unknown): number | undefined {
+  if (typeof value === "string" && value.trim() === "") return undefined;
+  if (typeof value !== "number" && typeof value !== "string") return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 /**
@@ -195,13 +214,16 @@ function extractDecoderTypes(group: MessageGroup | undefined): DecoderType[] {
 export function pairADSBWithACARSMessages(
   adsbAircraft: ADSBAircraft[],
   messageGroups: Map<string, MessageGroup>,
+  nowSeconds = Date.now() / 1000,
 ): PairedAircraft[] {
-  return adsbAircraft.map((aircraft) => {
+  const matchedGroups = new Set<MessageGroup>();
+  const pairedAircraft = adsbAircraft.map((aircraft) => {
     // Extract all possible match keys from ADS-B data
     const adsbKeys = extractADSBMatchKeys(aircraft);
 
     // Try to find matching ACARS message group
     const { group, strategy } = findMessageGroup(adsbKeys, messageGroups);
+    if (group) matchedGroups.add(group);
 
     // Build paired aircraft object
     const paired: PairedAircraft = {
@@ -217,6 +239,7 @@ export function pairADSBWithACARSMessages(
       type: aircraft.t, // 't' field is the ICAO aircraft type designator (e.g. "B738")
       adsbSourceType: aircraft.type, // 'type' field is the position source (adsb_icao, mlat, etc.)
       dbFlags: aircraft.dbFlags, // Bitfield: military=1, interesting=2, PIA=4, LADD=8
+      positionSource: "adsb",
       hasMessages: group !== undefined && group.messages.length > 0,
       hasAlerts: group?.has_alerts || false,
       messageCount: group?.messages.length || 0,
@@ -228,6 +251,80 @@ export function pairADSBWithACARSMessages(
 
     return paired;
   });
+
+  // Add aircraft that have a recent ACARS position but no matching aircraft
+  // in the live ADS-B feed. Message groups store messages newest-first, but
+  // search by timestamp as well so this remains correct after multipart or
+  // duplicate promotion.
+  for (const [groupKey, group] of messageGroups) {
+    if (matchedGroups.has(group)) continue;
+
+    const positionedMessages = group.messages
+      .map((message) => ({
+        message,
+        lat: toFiniteNumber(message.lat),
+        lon: toFiniteNumber(message.lon),
+      }))
+      .filter(
+        (position) =>
+          position.lat !== undefined &&
+          position.lat >= -90 &&
+          position.lat <= 90 &&
+          position.lon !== undefined &&
+          position.lon >= -180 &&
+          position.lon <= 180,
+      )
+      .sort(
+        (a, b) =>
+          (b.message.timestamp || b.message.msg_time || 0) -
+          (a.message.timestamp || a.message.msg_time || 0),
+      );
+
+    const position = positionedMessages[0];
+    if (!position) continue;
+    const { message: positionMessage, lat: positionLat, lon: positionLon } =
+      position;
+    if (positionLat === undefined || positionLon === undefined) continue;
+
+    const positionTimestamp =
+      positionMessage.timestamp || positionMessage.msg_time || 0;
+    if (
+      positionTimestamp <= 0 ||
+      nowSeconds - positionTimestamp > ACARS_POSITION_MAX_AGE_SECONDS
+    ) {
+      continue;
+    }
+
+    const normalizedHex = positionMessage.icao_hex?.trim().toUpperCase();
+    const normalizedFlight = (
+      positionMessage.icao_flight || positionMessage.flight
+    )
+      ?.trim()
+      .toUpperCase();
+    const normalizedTail = positionMessage.tail?.trim().toUpperCase();
+    const syntheticId =
+      normalizedHex || normalizedTail || normalizedFlight || groupKey;
+
+    pairedAircraft.push({
+      hex: `ACARS-${syntheticId}`,
+      flight: normalizedFlight,
+      tail: normalizedTail,
+      lat: positionLat,
+      lon: positionLon,
+      alt_baro: toFiniteNumber(positionMessage.alt),
+      positionSource: "acars",
+      positionTimestamp,
+      hasMessages: group.messages.length > 0,
+      hasAlerts: group.has_alerts,
+      messageCount: group.messages.length,
+      alertCount: group.num_alerts,
+      matchedGroup: group,
+      matchStrategy: "none",
+      decoderTypes: extractDecoderTypes(group),
+    });
+  }
+
+  return pairedAircraft;
 }
 
 /**

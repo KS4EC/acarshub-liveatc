@@ -80,7 +80,8 @@ export const LiveMapPage = () => {
     null,
   );
 
-  // Pair ADS-B aircraft with ACARS message groups
+  // Pair ADS-B aircraft with ACARS message groups and include recent
+  // ACARS-only position reports that have no matching live ADS-B aircraft.
   const pairedAircraft = useMemo(() => {
     const aircraft = adsbAircraft?.aircraft || [];
     return pairADSBWithACARSMessages(aircraft, messageGroups);

@@ -209,6 +209,7 @@ describe("pairADSBWithACARSMessages", () => {
       expect(paired.category).toBe("A3");
       expect(paired.type).toBe("B738");
       expect(paired.dbFlags).toBe(1);
+      expect(paired.positionSource).toBe("adsb");
     });
 
     it("uses `t` field as the ICAO aircraft type designator", () => {
@@ -269,6 +270,151 @@ describe("pairADSBWithACARSMessages", () => {
 
     it("processes an empty aircraft array", () => {
       const result = pairADSBWithACARSMessages([], new Map());
+      expect(result).toHaveLength(0);
+    });
+
+    it("adds a recent ACARS-only position when no ADS-B aircraft matches", () => {
+      const group = makeGroup(["N123AC", "AAL123"], {
+        messages: [
+          {
+            uid: "position-1",
+            station_id: "TEST",
+            timestamp: 9_900,
+            message_type: "ACARS",
+            tail: "N123AC",
+            flight: "AAL123",
+            lat: 35.91,
+            lon: -80.56,
+            alt: 28_000,
+          },
+        ],
+      });
+
+      const result = pairADSBWithACARSMessages(
+        [],
+        new Map([["AAL123", group]]),
+        10_000,
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        hex: "ACARS-N123AC",
+        flight: "AAL123",
+        tail: "N123AC",
+        lat: 35.91,
+        lon: -80.56,
+        alt_baro: 28_000,
+        positionSource: "acars",
+        positionTimestamp: 9_900,
+        hasMessages: true,
+        matchedGroup: group,
+      });
+    });
+
+    it("accepts string-backed coordinates restored from message history", () => {
+      const group = makeGroup(["N456AC"], {
+        messages: [
+          {
+            uid: "position-from-db",
+            station_id: "TEST",
+            timestamp: 9_900,
+            message_type: "ACARS",
+            tail: "N456AC",
+            lat: "35.75",
+            lon: "-80.25",
+            alt: "31000",
+          } as unknown as MessageGroup["messages"][number],
+        ],
+      });
+
+      const [result] = pairADSBWithACARSMessages(
+        [],
+        new Map([["N456AC", group]]),
+        10_000,
+      );
+
+      expect(result).toMatchObject({
+        lat: 35.75,
+        lon: -80.25,
+        alt_baro: 31_000,
+        positionSource: "acars",
+      });
+    });
+
+    it("keeps ADS-B as the position source when it matches the ACARS group", () => {
+      const group = makeGroup(["N123AC"], {
+        messages: [
+          {
+            uid: "position-1",
+            station_id: "TEST",
+            timestamp: 9_900,
+            message_type: "ACARS",
+            tail: "N123AC",
+            lat: 35.91,
+            lon: -80.56,
+          },
+        ],
+      });
+
+      const result = pairADSBWithACARSMessages(
+        [
+          makeAircraft({
+            hex: "A12345",
+            r: "N123AC",
+            lat: 36.1,
+            lon: -80.8,
+          }),
+        ],
+        new Map([["N123AC", group]]),
+        10_000,
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        lat: 36.1,
+        lon: -80.8,
+        positionSource: "adsb",
+        matchStrategy: "tail",
+      });
+    });
+
+    it("does not add stale or invalid ACARS-only positions", () => {
+      const stale = makeGroup(["STALE"], {
+        messages: [
+          {
+            uid: "stale",
+            station_id: "TEST",
+            timestamp: 1_000,
+            message_type: "ACARS",
+            flight: "STALE",
+            lat: 35,
+            lon: -80,
+          },
+        ],
+      });
+      const invalid = makeGroup(["INVALID"], {
+        messages: [
+          {
+            uid: "invalid",
+            station_id: "TEST",
+            timestamp: 9_900,
+            message_type: "ACARS",
+            flight: "INVALID",
+            lat: 95,
+            lon: -80,
+          },
+        ],
+      });
+
+      const result = pairADSBWithACARSMessages(
+        [],
+        new Map([
+          ["STALE", stale],
+          ["INVALID", invalid],
+        ]),
+        10_000,
+      );
+
       expect(result).toHaveLength(0);
     });
 
@@ -342,6 +488,7 @@ describe("pairADSBWithACARSMessages", () => {
 describe("getDisplayCallsign", () => {
   const base: PairedAircraft = {
     hex: "a12345",
+    positionSource: "adsb",
     hasMessages: false,
     hasAlerts: false,
     messageCount: 0,

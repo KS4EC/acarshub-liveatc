@@ -235,6 +235,7 @@ function makePairedAircraft(
 ): PairedAircraft {
   return {
     hex: "ABC123",
+    positionSource: "adsb",
     lat: 40,
     lon: -74,
     hasMessages: false,

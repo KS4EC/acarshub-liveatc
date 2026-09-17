@@ -108,7 +108,7 @@ interface ContextMenuState {
 /**
  * AircraftMarkers Component
  *
- * Renders MapLibre markers for all ADS-B aircraft positions.
+ * Renders MapLibre markers for ADS-B positions and recent ACARS-only positions.
  * - Pairs ADS-B aircraft with ACARS message groups (hex > callsign > tail)
  * - Generates SVG icons based on aircraft type/category
  * - Rotates markers based on heading
@@ -719,8 +719,9 @@ export function AircraftMarkers({
     }
   };
 
-  // No aircraft data yet
-  if (!adsbAircraft) {
+  // No position source is available yet. ACARS-only positions can still be
+  // rendered when the ADS-B feed is disabled or temporarily unavailable.
+  if (!adsbAircraft && aircraftMarkers.length === 0) {
     return null;
   }
 
@@ -919,12 +920,14 @@ export function AircraftMarkers({
                           </div>
                         )}
 
-                      <div className="aircraft-tooltip__row">
-                        <span className="aircraft-tooltip__label">Hex:</span>
-                        <span className="aircraft-tooltip__value">
-                          {markerData.aircraft.hex.toUpperCase()}
-                        </span>
-                      </div>
+                      {markerData.aircraft.positionSource === "adsb" && (
+                        <div className="aircraft-tooltip__row">
+                          <span className="aircraft-tooltip__label">Hex:</span>
+                          <span className="aircraft-tooltip__value">
+                            {markerData.aircraft.hex.toUpperCase()}
+                          </span>
+                        </div>
+                      )}
 
                       {markerData.aircraft.type && (
                         <div className="aircraft-tooltip__row">
@@ -938,9 +941,11 @@ export function AircraftMarkers({
                       <div className="aircraft-tooltip__row">
                         <span className="aircraft-tooltip__label">Source:</span>
                         <span className="aircraft-tooltip__value">
-                          {formatAdsbSourceType(
-                            markerData.aircraft.adsbSourceType,
-                          )}
+                          {markerData.aircraft.positionSource === "acars"
+                            ? "ACARS position"
+                            : formatAdsbSourceType(
+                                markerData.aircraft.adsbSourceType,
+                              )}
                         </span>
                       </div>
 
