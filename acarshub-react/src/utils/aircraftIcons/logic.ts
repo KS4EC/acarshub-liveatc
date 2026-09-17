@@ -240,8 +240,10 @@ export function getAircraftColor(
     return computedStyle.getPropertyValue("--color-overlay1").trim();
   }
 
-  // Default = Catppuccin text (adapts to theme)
-  return computedStyle.getPropertyValue("--color-text").trim();
+  // Default = saturated map marker color. The map tiles remain light even
+  // when the surrounding application uses the dark theme, so the normal
+  // theme text color can wash out against the basemap.
+  return computedStyle.getPropertyValue("--color-aircraft-default").trim();
 }
 
 /**

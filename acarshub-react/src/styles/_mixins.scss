@@ -47,6 +47,8 @@
   --color-warning: #{$mocha-yellow};
   --color-danger: #{$mocha-red};
   --color-info: #{$mocha-sky};
+  // Map tiles are independent of app theme; keep neutral aircraft saturated.
+  --color-aircraft-default: #{$latte-blue};
 
   // Accent colors
   --color-accent-mauve: #{$mocha-mauve};
@@ -130,6 +132,7 @@
   --color-warning: #{$latte-yellow};
   --color-danger: #{$latte-red};
   --color-info: #{$latte-sky};
+  --color-aircraft-default: #{$latte-blue};
 
   // Accent colors
   --color-accent-mauve: #{$latte-mauve};

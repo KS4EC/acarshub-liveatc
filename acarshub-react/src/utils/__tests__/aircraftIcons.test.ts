@@ -235,6 +235,7 @@ describe("getAircraftColor", () => {
           "--color-mauve": "#aa00ff",
           "--color-overlay1": "#888888",
           "--color-text": "#ffffff",
+          "--color-aircraft-default": "#1e66f5",
         };
         return map[prop] ?? "";
       },
@@ -329,7 +330,7 @@ describe("getAircraftColor", () => {
     });
 
     it("does NOT return overlay1 when altitude is above the threshold", () => {
-      expect(getAircraftColor(false, false, 501)).toBe("#ffffff"); // text color
+      expect(getAircraftColor(false, false, 501)).toBe("#1e66f5");
     });
 
     it("respects a custom ground threshold", () => {
@@ -337,18 +338,18 @@ describe("getAircraftColor", () => {
         "#888888",
       );
       expect(getAircraftColor(false, false, 1001, false, undefined, 1000)).toBe(
-        "#ffffff",
+        "#1e66f5",
       );
     });
   });
 
   describe("default (airborne, no messages)", () => {
-    it("returns text color when airborne and no messages", () => {
-      expect(getAircraftColor(false, false, 35000)).toBe("#ffffff");
+    it("returns the high-contrast map color when airborne", () => {
+      expect(getAircraftColor(false, false, 35000)).toBe("#1e66f5");
     });
 
-    it("returns text color when altitude is undefined", () => {
-      expect(getAircraftColor(false, false, undefined)).toBe("#ffffff");
+    it("returns the high-contrast map color when altitude is undefined", () => {
+      expect(getAircraftColor(false, false, undefined)).toBe("#1e66f5");
     });
   });
 });

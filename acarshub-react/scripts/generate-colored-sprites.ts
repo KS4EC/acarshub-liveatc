@@ -8,7 +8,7 @@
  * Uses sharp for image processing (lighter than canvas, easier to build)
  *
  * Output:
- * - spritesheet-mocha-default.png (#cdd6f4)
+ * - spritesheet-mocha-default.png (#1e66f5)
  * - spritesheet-mocha-alerts.png (#f38ba8)
  * - spritesheet-mocha-lowalt.png (#7f849c)
  * - spritesheet-mocha-acars.png (#89b4fa)
@@ -38,7 +38,10 @@ const __dirname = path.dirname(__filename);
 // Color definitions - matching message card decoder type colors
 const COLORS = {
   mocha: {
-    default: "#cdd6f4", // text
+    // The basemap is light even when the application uses the dark theme.
+    // Use Latte blue for the neutral marker in both themes so ordinary
+    // aircraft remain distinct from roads, terrain, and range rings.
+    default: "#1e66f5",
     alerts: "#f38ba8", // red
     lowalt: "#7f849c", // overlay1
     // Decoder types (matching message-card.scss)
@@ -49,7 +52,7 @@ const COLORS = {
     irdm: "#cba6f7", // mauve
   },
   latte: {
-    default: "#4c4f69", // text
+    default: "#1e66f5",
     alerts: "#d20f39", // red
     lowalt: "#8c8fa1", // overlay1
     // Decoder types (matching message-card.scss)
