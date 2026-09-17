@@ -98,6 +98,146 @@ function toFiniteNumber(value: unknown): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+interface AcarsPosition {
+  lat: number;
+  lon: number;
+  alt?: number;
+  timestamp: number;
+  message: MessageGroup["messages"][number];
+}
+
+function degreesAndDecimalMinutes(value: string, degreeDigits: number): number {
+  const degrees = Number(value.slice(0, degreeDigits));
+  const minutes =
+    Number(value.slice(degreeDigits, -1)) + Number(value.slice(-1)) / 10;
+  return degrees + minutes / 60;
+}
+
+/**
+ * Extract only coordinate layouts already recognized by the intelligence
+ * parser. This deliberately avoids guessing at arbitrary numeric telemetry.
+ */
+function extractPositionFromMessage(
+  message: MessageGroup["messages"][number],
+): Omit<AcarsPosition, "timestamp" | "message"> | undefined {
+  const suppliedLat = toFiniteNumber(message.lat);
+  const suppliedLon = toFiniteNumber(message.lon);
+  if (
+    suppliedLat !== undefined &&
+    suppliedLat >= -90 &&
+    suppliedLat <= 90 &&
+    suppliedLon !== undefined &&
+    suppliedLon >= -180 &&
+    suppliedLon <= 180
+  ) {
+    return {
+      lat: suppliedLat,
+      lon: suppliedLon,
+      alt: toFiniteNumber(message.alt),
+    };
+  }
+
+  const text = message.text;
+  if (typeof text !== "string" || text.trim() === "") return undefined;
+
+  const compact = text.match(/POSN(\d{5})W(\d{6})/i);
+  if (compact) {
+    const fields = text.slice((compact.index ?? 0) + compact[0].length)
+      .replace(/^,/, "")
+      .split(",");
+    const flightLevel = fields[2]?.trim();
+    return {
+      lat: degreesAndDecimalMinutes(compact[1], 2),
+      lon: -degreesAndDecimalMinutes(compact[2], 3),
+      alt: /^\d{2,3}$/.test(flightLevel)
+        ? Number(flightLevel) * 100
+        : undefined,
+    };
+  }
+
+  const decimal = text.match(/POSN\s+(\d{2}\.\d{3})W\s*(\d{2,3}\.\d{3})/i);
+  if (decimal) {
+    return { lat: Number(decimal[1]), lon: -Number(decimal[2]) };
+  }
+
+  const degreesMinutesSeconds = text.match(
+    /N\s*(\d{2})(\d{2})(\d{2})W\s*(\d{2,3})(\d{2})(\d{2})/i,
+  );
+  if (degreesMinutesSeconds) {
+    return {
+      lat:
+        Number(degreesMinutesSeconds[1]) +
+        Number(degreesMinutesSeconds[2]) / 60 +
+        Number(degreesMinutesSeconds[3]) / 3600,
+      lon: -(
+        Number(degreesMinutesSeconds[4]) +
+        Number(degreesMinutesSeconds[5]) / 60 +
+        Number(degreesMinutesSeconds[6]) / 3600
+      ),
+    };
+  }
+
+  const direct = text.match(
+    /\bN\s*(\d{2}\.\d+),W\s*(\d{2,3}\.\d+)\b/i,
+  );
+  if (direct) {
+    return { lat: Number(direct[1]), lon: -Number(direct[2]) };
+  }
+
+  const csv = text.trim().split(",").map((value) => value.trim());
+  if (
+    message.label === "33" &&
+    csv.length >= 8 &&
+    /^-?\d+\.\d+$/.test(csv[2]) &&
+    /^-?\d+\.\d+$/.test(csv[3])
+  ) {
+    return {
+      lat: Number(csv[2]),
+      lon: Number(csv[3]),
+      alt: /^\d+$/.test(csv[4]) ? Number(csv[4]) : undefined,
+    };
+  }
+
+  const etaPosition = text.match(
+    /\/(\d{2})(\d{2}\.\d)N(\d{3})(\d{2}\.\d)W\/(\d{2,3})\//i,
+  );
+  if (message.label === "4T" && etaPosition) {
+    return {
+      lat: Number(etaPosition[1]) + Number(etaPosition[2]) / 60,
+      lon: -(Number(etaPosition[3]) + Number(etaPosition[4]) / 60),
+      alt: Number(etaPosition[5]) * 100,
+    };
+  }
+
+  return undefined;
+}
+
+function findLatestAcarsPosition(
+  group: MessageGroup | undefined,
+  nowSeconds: number,
+): AcarsPosition | undefined {
+  if (!group) return undefined;
+
+  const positionedMessages = group.messages
+    .map((message) => {
+      const position = extractPositionFromMessage(message);
+      const timestamp = message.timestamp || message.msg_time || 0;
+      return position ? { ...position, timestamp, message } : undefined;
+    })
+    .filter((position): position is AcarsPosition => position !== undefined)
+    .sort((a, b) => b.timestamp - a.timestamp);
+
+  const position = positionedMessages[0];
+  if (
+    !position ||
+    position.timestamp <= 0 ||
+    nowSeconds - position.timestamp > ACARS_POSITION_MAX_AGE_SECONDS
+  ) {
+    return undefined;
+  }
+  return position;
+}
+
 /**
  * Match keys extracted from ADS-B aircraft
  * Used for pairing with ACARS message groups
@@ -224,22 +364,31 @@ export function pairADSBWithACARSMessages(
     // Try to find matching ACARS message group
     const { group, strategy } = findMessageGroup(adsbKeys, messageGroups);
     if (group) matchedGroups.add(group);
+    const hasAdsbPosition =
+      typeof aircraft.lat === "number" &&
+      Number.isFinite(aircraft.lat) &&
+      typeof aircraft.lon === "number" &&
+      Number.isFinite(aircraft.lon);
+    const acarsPosition = hasAdsbPosition
+      ? undefined
+      : findLatestAcarsPosition(group, nowSeconds);
 
     // Build paired aircraft object
     const paired: PairedAircraft = {
       hex: aircraft.hex,
       flight: adsbKeys.flight,
       tail: adsbKeys.tail,
-      lat: aircraft.lat,
-      lon: aircraft.lon,
-      alt_baro: aircraft.alt_baro,
+      lat: hasAdsbPosition ? aircraft.lat : acarsPosition?.lat,
+      lon: hasAdsbPosition ? aircraft.lon : acarsPosition?.lon,
+      alt_baro: aircraft.alt_baro ?? acarsPosition?.alt,
       gs: aircraft.gs,
       track: aircraft.track,
       category: aircraft.category,
       type: aircraft.t, // 't' field is the ICAO aircraft type designator (e.g. "B738")
       adsbSourceType: aircraft.type, // 'type' field is the position source (adsb_icao, mlat, etc.)
       dbFlags: aircraft.dbFlags, // Bitfield: military=1, interesting=2, PIA=4, LADD=8
-      positionSource: "adsb",
+      positionSource: acarsPosition ? "acars" : "adsb",
+      positionTimestamp: acarsPosition?.timestamp,
       hasMessages: group !== undefined && group.messages.length > 0,
       hasAlerts: group?.has_alerts || false,
       messageCount: group?.messages.length || 0,
@@ -259,41 +408,15 @@ export function pairADSBWithACARSMessages(
   for (const [groupKey, group] of messageGroups) {
     if (matchedGroups.has(group)) continue;
 
-    const positionedMessages = group.messages
-      .map((message) => ({
-        message,
-        lat: toFiniteNumber(message.lat),
-        lon: toFiniteNumber(message.lon),
-      }))
-      .filter(
-        (position) =>
-          position.lat !== undefined &&
-          position.lat >= -90 &&
-          position.lat <= 90 &&
-          position.lon !== undefined &&
-          position.lon >= -180 &&
-          position.lon <= 180,
-      )
-      .sort(
-        (a, b) =>
-          (b.message.timestamp || b.message.msg_time || 0) -
-          (a.message.timestamp || a.message.msg_time || 0),
-      );
-
-    const position = positionedMessages[0];
+    const position = findLatestAcarsPosition(group, nowSeconds);
     if (!position) continue;
-    const { message: positionMessage, lat: positionLat, lon: positionLon } =
-      position;
-    if (positionLat === undefined || positionLon === undefined) continue;
-
-    const positionTimestamp =
-      positionMessage.timestamp || positionMessage.msg_time || 0;
-    if (
-      positionTimestamp <= 0 ||
-      nowSeconds - positionTimestamp > ACARS_POSITION_MAX_AGE_SECONDS
-    ) {
-      continue;
-    }
+    const {
+      message: positionMessage,
+      lat: positionLat,
+      lon: positionLon,
+      alt: positionAltitude,
+      timestamp: positionTimestamp,
+    } = position;
 
     const normalizedHex = positionMessage.icao_hex?.trim().toUpperCase();
     const normalizedFlight = (
@@ -311,7 +434,7 @@ export function pairADSBWithACARSMessages(
       tail: normalizedTail,
       lat: positionLat,
       lon: positionLon,
-      alt_baro: toFiniteNumber(positionMessage.alt),
+      alt_baro: positionAltitude,
       positionSource: "acars",
       positionTimestamp,
       hasMessages: group.messages.length > 0,

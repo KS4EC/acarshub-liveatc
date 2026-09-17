@@ -341,6 +341,101 @@ describe("pairADSBWithACARSMessages", () => {
       });
     });
 
+    it("extracts compact degrees-and-decimal-minutes reports with flight level", () => {
+      const group = makeGroup(["UAL123"], {
+        messages: [
+          {
+            uid: "compact-position",
+            station_id: "TEST",
+            timestamp: 9_900,
+            message_type: "ACARS",
+            flight: "UAL123",
+            label: "H1",
+            text: "POSN36192W081120,YEOLD,171513,280,SCHUL,172037",
+          },
+        ],
+      });
+
+      const [result] = pairADSBWithACARSMessages(
+        [],
+        new Map([["UAL123", group]]),
+        10_000,
+      );
+
+      expect(result.lat).toBeCloseTo(36.32, 5);
+      expect(result.lon).toBeCloseTo(-81.2, 5);
+      expect(result.alt_baro).toBe(28_000);
+    });
+
+    it("extracts decimal POSN and explicit N/W position reports", () => {
+      const decimalGroup = makeGroup(["F92729"], {
+        messages: [
+          {
+            uid: "decimal-position",
+            station_id: "TEST",
+            timestamp: 9_900,
+            message_type: "ACARS",
+            flight: "F92729",
+            label: "21",
+            text: "POSN 35.691W 80.190, 224,211548,22042,KTPA",
+          },
+        ],
+      });
+      const directGroup = makeGroup(["G42897"], {
+        messages: [
+          {
+            uid: "direct-position",
+            station_id: "TEST",
+            timestamp: 9_901,
+            message_type: "ACARS",
+            flight: "G42897",
+            label: "16",
+            text: "211724,36000,2204, 128,N 33.585,W 82.136",
+          },
+        ],
+      });
+
+      const result = pairADSBWithACARSMessages(
+        [],
+        new Map([
+          ["F92729", decimalGroup],
+          ["G42897", directGroup],
+        ]),
+        10_000,
+      );
+
+      expect(result[0]).toMatchObject({ lat: 35.691, lon: -80.19 });
+      expect(result[1]).toMatchObject({ lat: 33.585, lon: -82.136 });
+    });
+
+    it("uses a recent ACARS position when matched ADS-B lacks coordinates", () => {
+      const group = makeGroup(["N123AC"], {
+        messages: [
+          {
+            uid: "position-1",
+            station_id: "TEST",
+            timestamp: 9_900,
+            message_type: "ACARS",
+            tail: "N123AC",
+            text: "POSN 35.691W 80.190, 224,211548,22042,KTPA",
+          },
+        ],
+      });
+
+      const [result] = pairADSBWithACARSMessages(
+        [makeAircraft({ hex: "A12345", r: "N123AC" })],
+        new Map([["N123AC", group]]),
+        10_000,
+      );
+
+      expect(result).toMatchObject({
+        hex: "A12345",
+        lat: 35.691,
+        lon: -80.19,
+        positionSource: "acars",
+      });
+    });
+
     it("keeps ADS-B as the position source when it matches the ACARS group", () => {
       const group = makeGroup(["N123AC"], {
         messages: [
