@@ -1,0 +1,47 @@
+services:
+  acars_router:
+    image: ghcr.io/sdr-enthusiasts/acars_router@sha256:0dc5e94dfa00a0d1f0d5c323a0e3e7cdbbfe9a4cc7de750114d7c887ea575cc5
+    container_name: acars_router
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5550:5550/udp"
+    tmpfs:
+      - /run:exec,size=32M
+      - /var/log:size=32M
+    environment:
+      - TZ=America/New_York
+      - AR_ENABLE_DEDUPE=true
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  acarshub:
+    image: ghcr.io/sdr-enthusiasts/docker-acarshub@sha256:1938777a30eeb7fd5261b333cc9347b42c95e1b92baa6d871da7281a01696978
+    container_name: acarshub
+    restart: unless-stopped
+    depends_on:
+      - acars_router
+    ports:
+      - "8080:80"
+    volumes:
+      - /opt/acarshub/acars_data:/run/acars
+    tmpfs:
+      - /database:exec,size=64M
+      - /run:exec,size=64M
+      - /var/log:size=64M
+    environment:
+      - TZ=America/New_York
+      - ENABLE_ACARS=true
+      - ACARS_CONNECTIONS=zmq://acars_router:45550
+      - ENABLE_VDLM=false
+      - ENABLE_HFDL=false
+      - ENABLE_IMSL=false
+      - ENABLE_IRDM=false
+      - ENABLE_ADSB=false
+      - DB_SAVE_DAYS=7
+      - MIN_LOG_LEVEL=4
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
