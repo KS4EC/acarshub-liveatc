@@ -38,7 +38,10 @@ services:
       - ENABLE_HFDL=false
       - ENABLE_IMSL=false
       - ENABLE_IRDM=false
-      - ENABLE_ADSB=false
+      - ENABLE_ADSB=true
+      - ADSB_URL=http://10.0.0.251:8080/data/aircraft.json
+      - ADSB_LAT=35.902300
+      - ADSB_LON=-80.568190
       - DB_SAVE_DAYS=7
       - MIN_LOG_LEVEL=4
     logging:
