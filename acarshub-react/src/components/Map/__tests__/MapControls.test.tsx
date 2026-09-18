@@ -429,6 +429,33 @@ describe("MapControls", () => {
       expect(state.showOnlyUnread).toBe(false);
       expect(state.showOnlyAcars).toBe(false);
     });
+
+    it("filters specifically to ACARS-derived positions", async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState((s) => ({
+        settings: {
+          ...s.settings,
+          map: {
+            ...s.settings.map,
+            showOnlyAcars: true,
+            showOnlyAcarsPositions: false,
+            showOnlyUnread: false,
+          },
+        },
+      }));
+
+      render(<MapControls />);
+      await user.click(
+        screen.getByRole("button", {
+          name: /show only acars-derived positions/i,
+        }),
+      );
+
+      const state = useSettingsStore.getState().settings.map;
+      expect(state.showOnlyAcarsPositions).toBe(true);
+      expect(state.showOnlyAcars).toBe(false);
+      expect(state.showOnlyUnread).toBe(false);
+    });
   });
 
   describe("Single-aircraft filter toggles (military / interesting / PIA / LADD)", () => {

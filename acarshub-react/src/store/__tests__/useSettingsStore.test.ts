@@ -96,7 +96,8 @@ describe("useSettingsStore", () => {
       expect(settings.map.mapSidebarCollapsed).toBe(false);
       expect(settings.map.showHeyWhatsThat).toBe(true);
       expect(settings.map.markerSize).toBe("medium");
-      expect(settings.version).toBe(10);
+      expect(settings.version).toBe(11);
+      expect(settings.map.showOnlyAcarsPositions).toBe(false);
       expect(settings.updatedAt).toBeGreaterThan(0);
     });
 
@@ -437,6 +438,15 @@ describe("useSettingsStore", () => {
       expect(settings.map.showOnlyAcars).toBe(true);
     });
 
+    it("should update showOnlyAcarsPositions", () => {
+      const { setShowOnlyAcarsPositions } = useSettingsStore.getState();
+
+      setShowOnlyAcarsPositions(true);
+
+      const { settings } = useSettingsStore.getState();
+      expect(settings.map.showOnlyAcarsPositions).toBe(true);
+    });
+
     it("should update showDatablocks", () => {
       const { setShowDatablocks } = useSettingsStore.getState();
 
@@ -594,7 +604,7 @@ describe("useSettingsStore", () => {
       expect(typeof exported).toBe("string");
       const parsed = JSON.parse(exported) as UserSettings;
       expect(parsed.appearance.theme).toBe("latte");
-      expect(parsed.version).toBe(10);
+      expect(parsed.version).toBe(11);
     });
 
     it("should import valid settings JSON", () => {
@@ -774,7 +784,7 @@ describe("useSettingsStore", () => {
       const afterImport = Date.now();
 
       const { settings } = useSettingsStore.getState();
-      expect(settings.version).toBe(3); // Updated to current version
+      expect(settings.version).toBe(11); // Updated to current version
       expect(settings.updatedAt).toBeGreaterThanOrEqual(beforeImport);
       expect(settings.updatedAt).toBeLessThanOrEqual(afterImport);
     });
@@ -834,7 +844,7 @@ describe("useSettingsStore", () => {
 
       const migrated = migrate(oldState, 0);
 
-      expect(migrated.settings.version).toBe(10);
+      expect(migrated.settings.version).toBe(11);
       expect(migrated.settings.appearance.theme).toBe("mocha"); // Reset to default
       expect(migrated.settings.map).toBeDefined();
       expect(migrated.settings.map.markerSize).toBe("medium");
@@ -878,7 +888,7 @@ describe("useSettingsStore", () => {
 
       const migrated = migrate(v1State, 1);
 
-      expect(migrated.settings.version).toBe(10);
+      expect(migrated.settings.version).toBe(11);
       expect(migrated.settings.map.mapSidebarWidth).toBe(408);
       expect(migrated.settings.map.mapSidebarCollapsed).toBe(false);
       expect(migrated.settings.map.showHeyWhatsThat).toBe(true);
@@ -954,7 +964,7 @@ describe("useSettingsStore", () => {
       };
 
       const migrated = migrate(v3State, 3);
-      expect(migrated.settings.version).toBe(10);
+      expect(migrated.settings.version).toBe(11);
       // Existing settings preserved
       expect(migrated.settings.map.showNexrad).toBe(false);
       expect(migrated.settings.map.showOnlyMilitary).toBe(false);
@@ -1029,7 +1039,7 @@ describe("useSettingsStore", () => {
       };
 
       const migrated = migrate(v4State, 4);
-      expect(migrated.settings.version).toBe(10);
+      expect(migrated.settings.version).toBe(11);
       // Existing settings preserved
       expect(migrated.settings.map.showOpenAIP).toBe(false);
       expect(migrated.settings.map.showRainViewer).toBe(false);
@@ -1041,7 +1051,7 @@ describe("useSettingsStore", () => {
     });
 
     // FEAT-MARKER-SIZE
-    it("should migrate from version 9 to version 10 (add markerSize)", () => {
+    it("should migrate from version 9 to version 11", () => {
       // biome-ignore lint/suspicious/noExplicitAny: Zustand persist API doesn't expose migrate type
       const { migrate } = (useSettingsStore as any).persist.getOptions();
 
@@ -1056,8 +1066,28 @@ describe("useSettingsStore", () => {
 
       const migrated = migrate(v9State, 9);
 
-      expect(migrated.settings.version).toBe(10);
+      expect(migrated.settings.version).toBe(11);
       expect(migrated.settings.map.markerSize).toBe("medium");
+      expect(migrated.settings.map.showOnlyAcarsPositions).toBe(false);
+    });
+
+    it("should migrate from version 10 to version 11", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: Zustand persist API doesn't expose migrate type
+      const { migrate } = (useSettingsStore as any).persist.getOptions();
+      const v10State = {
+        settings: {
+          ...useSettingsStore.getState().settings,
+          version: 10,
+          map: { ...useSettingsStore.getState().settings.map },
+        },
+      };
+      // biome-ignore lint/suspicious/noExplicitAny: simulating a version 10 persisted shape
+      delete (v10State.settings.map as any).showOnlyAcarsPositions;
+
+      const migrated = migrate(v10State, 10);
+
+      expect(migrated.settings.version).toBe(11);
+      expect(migrated.settings.map.showOnlyAcarsPositions).toBe(false);
     });
 
     it("should return unchanged state for current version", () => {
@@ -1068,8 +1098,8 @@ describe("useSettingsStore", () => {
         settings: useSettingsStore.getState().settings,
       };
 
-      // Version 10 is the current version; migrate should return the state unchanged
-      const migrated = migrate(currentState, 10);
+      // Version 11 is current; migrate should return the state unchanged.
+      const migrated = migrate(currentState, 11);
 
       expect(migrated).toEqual(currentState);
     });
@@ -1141,7 +1171,7 @@ describe("useSettingsStore", () => {
       };
 
       const migrated = migrate(v7State, 7);
-      expect(migrated.settings.version).toBe(10);
+      expect(migrated.settings.version).toBe(11);
       // Existing settings preserved
       expect(migrated.settings.map.mapSidebarWidth).toBe(450);
       expect(migrated.settings.appearance.theme).toBe("mocha");
@@ -1220,7 +1250,7 @@ describe("useSettingsStore", () => {
       };
 
       const migrated = migrate(v8State, 8);
-      expect(migrated.settings.version).toBe(10);
+      expect(migrated.settings.version).toBe(11);
       // Existing settings preserved
       expect(migrated.settings.map.mapSidebarWidth).toBe(408);
       expect(migrated.settings.map.mapSidebarCollapsed).toBe(false);
@@ -1359,7 +1389,7 @@ describe("useSettingsStore", () => {
       if (!stored) throw new Error("Expected stored to be truthy");
       const parsed = JSON.parse(stored);
 
-      expect(parsed.version).toBe(10);
+      expect(parsed.version).toBe(11);
     });
   });
 

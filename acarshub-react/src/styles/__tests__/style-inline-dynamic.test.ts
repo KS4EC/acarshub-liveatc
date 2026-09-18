@@ -251,7 +251,8 @@ describe("STYLE-INLINE-DYNAMIC: dynamic inline styles routed through CSS variabl
     });
 
     it("renders an .aircraft-marker__container wrapper", () => {
-      expect(tsx).toMatch(/className="aircraft-marker__container"/);
+      expect(tsx).toContain("aircraft-marker__container");
+      expect(tsx).toContain("aircraft-marker__container--acars-position");
       expect(scss).toMatch(
         /\.aircraft-marker__container\s*\{[\s\S]*?z-index:\s*var\(--marker-z/,
       );

@@ -53,12 +53,39 @@ const useAcarsFilterToggle = () => {
   const setShowOnlyUnread = useSettingsStore(
     (state) => state.setShowOnlyUnread,
   );
+  const setShowOnlyAcarsPositions = useSettingsStore(
+    (state) => state.setShowOnlyAcarsPositions,
+  );
 
   return () => {
     const newValue = !mapSettings.showOnlyAcars;
     setShowOnlyAcars(newValue);
     // If enabling ACARS filter, disable Unread filter (mutually exclusive)
     if (newValue && mapSettings.showOnlyUnread) {
+      setShowOnlyUnread(false);
+    }
+    if (newValue && mapSettings.showOnlyAcarsPositions) {
+      setShowOnlyAcarsPositions(false);
+    }
+  };
+};
+
+/** Show only markers whose displayed coordinates came from an ACARS report. */
+const useAcarsPositionFilterToggle = () => {
+  const mapSettings = useSettingsStore((state) => state.settings.map);
+  const setShowOnlyAcars = useSettingsStore((state) => state.setShowOnlyAcars);
+  const setShowOnlyAcarsPositions = useSettingsStore(
+    (state) => state.setShowOnlyAcarsPositions,
+  );
+  const setShowOnlyUnread = useSettingsStore(
+    (state) => state.setShowOnlyUnread,
+  );
+
+  return () => {
+    const newValue = !mapSettings.showOnlyAcarsPositions;
+    setShowOnlyAcarsPositions(newValue);
+    if (newValue) {
+      setShowOnlyAcars(false);
       setShowOnlyUnread(false);
     }
   };
@@ -74,6 +101,9 @@ const useUnreadFilterToggle = () => {
   const setShowOnlyUnread = useSettingsStore(
     (state) => state.setShowOnlyUnread,
   );
+  const setShowOnlyAcarsPositions = useSettingsStore(
+    (state) => state.setShowOnlyAcarsPositions,
+  );
 
   return () => {
     const newValue = !mapSettings.showOnlyUnread;
@@ -81,6 +111,9 @@ const useUnreadFilterToggle = () => {
     // If enabling Unread filter, disable ACARS filter (mutually exclusive)
     if (newValue && mapSettings.showOnlyAcars) {
       setShowOnlyAcars(false);
+    }
+    if (newValue && mapSettings.showOnlyAcarsPositions) {
+      setShowOnlyAcarsPositions(false);
     }
   };
 };
@@ -136,6 +169,7 @@ export function MapControls({
 
   // Mutually exclusive filter toggles
   const handleAcarsToggle = useAcarsFilterToggle();
+  const handleAcarsPositionToggle = useAcarsPositionFilterToggle();
   const handleUnreadToggle = useUnreadFilterToggle();
 
   // Check if range rings are allowed by backend (privacy protection)
@@ -288,13 +322,19 @@ export function MapControls({
         />
       </div>
 
-      {/* Aircraft Filters: ACARS + Unread + Military + Interesting + PIA + LADD */}
+      {/* Aircraft Filters: ACARS messages + ACARS positions + Unread + flags */}
       <div className="map-controls__group map-controls__group--filters">
         <MapControlButton
           icon={IconPlane}
           active={mapSettings.showOnlyAcars}
           onClick={handleAcarsToggle}
-          tooltip="Show Only Aircraft with ACARS"
+          tooltip="Show Only Aircraft with ACARS Messages"
+        />
+        <MapControlButton
+          icon={IconLocationCrosshairs}
+          active={mapSettings.showOnlyAcarsPositions}
+          onClick={handleAcarsPositionToggle}
+          tooltip="Show Only ACARS-Derived Positions"
         />
         <MapControlButton
           icon={IconEnvelope}

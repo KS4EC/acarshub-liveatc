@@ -386,8 +386,10 @@ export interface MapSettings {
   colorByDecoder: boolean;
   /** Altitude threshold (ft MSL) for "on ground" color (default: 500) */
   groundAltitudeThreshold: number;
-  /** Show only ACARS aircraft on map */
+  /** Show only aircraft that have ACARS messages on map */
   showOnlyAcars: boolean;
+  /** Show only aircraft whose displayed position came from ACARS */
+  showOnlyAcarsPositions: boolean;
   /** Show data blocks */
   showDatablocks: boolean;
   /** Show extended data blocks */
@@ -545,6 +547,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
     markerSize: "medium",
     groundAltitudeThreshold: 500,
     showOnlyAcars: false,
+    showOnlyAcarsPositions: false,
     showDatablocks: true,
     showExtendedDatablocks: false,
     showNexrad: false,

@@ -353,9 +353,10 @@ export function AircraftMarkers({
   const filteredPairedAircraft = useMemo(() => {
     let filtered = pairedAircraft;
 
-    // ACARS filters (mutually exclusive: only one should be active at a time)
-    // If ACARS-only filter is enabled
-    if (mapSettings.showOnlyAcars) {
+    // Message, position-source, and unread filters are mutually exclusive.
+    if (mapSettings.showOnlyAcarsPositions) {
+      filtered = filtered.filter((a) => a.positionSource === "acars");
+    } else if (mapSettings.showOnlyAcars) {
       filtered = filtered.filter((a) => a.hasMessages);
     }
     // If Unread-only filter is enabled (mutually exclusive with ACARS-only)
@@ -395,6 +396,7 @@ export function AircraftMarkers({
     return filtered;
   }, [
     pairedAircraft,
+    mapSettings.showOnlyAcarsPositions,
     mapSettings.showOnlyAcars,
     mapSettings.showOnlyUnread,
     mapSettings.showOnlyMilitary,
@@ -750,7 +752,12 @@ export function AircraftMarkers({
             }
           >
             <div
-              className="aircraft-marker__container"
+              className={`aircraft-marker__container${
+                markerData.aircraft.positionSource === "acars"
+                  ? " aircraft-marker__container--acars-position"
+                  : ""
+              }`}
+              data-position-source={markerData.aircraft.positionSource}
               style={{ "--marker-z": markerZ } as React.CSSProperties}
             >
               {useSprites && markerData.spritePosition ? (
@@ -772,7 +779,7 @@ export function AircraftMarkers({
                     isHovered={hoveredAircraftHex === markerData.hex}
                     isFollowed={followedAircraftHex === markerData.hex}
                     hasUnreadMessages={markerData.hasUnreadMessages}
-                    ariaLabel={`Aircraft ${markerData.hex}${markerData.aircraft.hasMessages ? " - Click to view messages" : ""}`}
+                    ariaLabel={`Aircraft ${markerData.hex}${markerData.aircraft.positionSource === "acars" ? " - ACARS-derived position" : ""}${markerData.aircraft.hasMessages ? " - Click to view messages" : ""}`}
                     cursorStyle={
                       markerData.aircraft.hasMessages ? "pointer" : "default"
                     }
@@ -787,7 +794,7 @@ export function AircraftMarkers({
                   <button
                     type="button"
                     className="aircraft-marker-hit"
-                    aria-label={`Aircraft ${markerData.hex}${markerData.aircraft.hasMessages ? " - Click to view messages" : ""}`}
+                    aria-label={`Aircraft ${markerData.hex}${markerData.aircraft.positionSource === "acars" ? " - ACARS-derived position" : ""}${markerData.aircraft.hasMessages ? " - Click to view messages" : ""}`}
                     style={
                       {
                         "--marker-cursor": markerData.aircraft.hasMessages
@@ -838,7 +845,7 @@ export function AircraftMarkers({
                 <button
                   type="button"
                   className="aircraft-marker-hit"
-                  aria-label={`Aircraft ${markerData.hex}${markerData.aircraft.hasMessages ? " - Click to view messages" : ""}`}
+                  aria-label={`Aircraft ${markerData.hex}${markerData.aircraft.positionSource === "acars" ? " - ACARS-derived position" : ""}${markerData.aircraft.hasMessages ? " - Click to view messages" : ""}`}
                   style={
                     {
                       "--marker-cursor": markerData.aircraft.hasMessages

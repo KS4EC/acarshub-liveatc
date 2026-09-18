@@ -311,6 +311,7 @@ describe("AircraftMarkers", () => {
           useSprites: false,
           markerSize: "medium",
           showOnlyAcars: false,
+          showOnlyAcarsPositions: false,
           showOnlyUnread: false,
           showOnlyMilitary: false,
           showOnlyInteresting: false,
@@ -623,6 +624,36 @@ describe("AircraftMarkers", () => {
       flushRAF();
 
       expect(screen.getAllByTestId("aircraft-marker")).toHaveLength(1);
+    });
+
+    it("showOnlyAcarsPositions keeps only ACARS-derived positions", () => {
+      const aircraft = [
+        makePairedAircraft({
+          hex: "ACARSPOS",
+          positionSource: "acars",
+          hasMessages: true,
+        }),
+        makePairedAircraft({
+          hex: "ADSBPOS",
+          positionSource: "adsb",
+          hasMessages: true,
+        }),
+      ];
+      setMapSetting("showOnlyAcarsPositions", true);
+
+      renderWithMap(
+        makeFakeMap(WORLD_BOUNDS),
+        <AircraftMarkers aircraft={aircraft} />,
+      );
+      flushRAF();
+
+      expect(screen.getAllByTestId("aircraft-marker")).toHaveLength(1);
+      expect(
+        screen.getByRole("button", { name: /ACARSPOS - ACARS-derived position/i }),
+      ).toBeInTheDocument();
+      expect(
+        document.querySelector('[data-position-source="acars"]'),
+      ).toHaveClass("aircraft-marker__container--acars-position");
     });
 
     it("showOnlyUnread hides aircraft whose messages are all read", () => {

@@ -58,6 +58,26 @@
 .aircraft-marker__container {
   position: relative;
   z-index: var(--marker-z, 10);
+
+  &--acars-position::after {
+    content: "A";
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    display: grid;
+    place-items: center;
+    width: 15px;
+    height: 15px;
+    border: 1px solid var(--color-base);
+    border-radius: 50%;
+    background: var(--color-mauve);
+    color: var(--color-crust);
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 1;
+    pointer-events: none;
+    z-index: 20;
+  }
 }
 
 // Clickable hit-target wrapper for both rendering paths (SVG icon and
