@@ -165,6 +165,98 @@
   }
 }
 
+.aircraft-cpdlc-insights {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-surface-2);
+  border-radius: 8px;
+  background-color: var(--color-surface-0);
+}
+
+.aircraft-cpdlc-insights__heading {
+  margin: 0 0 0.5rem;
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.aircraft-cpdlc-insights__list {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.aircraft-cpdlc-insights__item {
+  border-radius: 6px;
+  background-color: var(--color-base);
+
+  &[open] {
+    outline: 1px solid var(--color-surface-1);
+  }
+}
+
+.aircraft-cpdlc-insights__summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.625rem;
+  color: var(--color-text);
+  cursor: pointer;
+
+  &::marker {
+    color: var(--color-blue);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}
+
+.aircraft-cpdlc-insights__title,
+.aircraft-cpdlc-insights__text {
+  display: block;
+}
+
+.aircraft-cpdlc-insights__title {
+  color: var(--color-subtext-0);
+  font-size: 0.75rem;
+}
+
+.aircraft-cpdlc-insights__text {
+  margin-top: 0.125rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.aircraft-cpdlc-insights__response {
+  color: var(--color-subtext-0);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.aircraft-cpdlc-insights__response--matched {
+  color: var(--color-green);
+  font-weight: 700;
+}
+
+.aircraft-cpdlc-insights__evidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  padding: 0 0.625rem 0.5rem 1.75rem;
+  color: var(--color-subtext-0);
+  font-family: monospace;
+  font-size: 0.6875rem;
+}
+
 // Animations
 @keyframes fade-in {
   from {

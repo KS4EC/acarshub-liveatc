@@ -43,6 +43,26 @@ function makeMsg(uid: string): AcarsMsg {
   };
 }
 
+function makeCpdlcMsg(uid: string): AcarsMsg {
+  return {
+    ...makeMsg(uid),
+    libacars: {
+      msg_type: "fans1a_cpdlc_msg",
+      crc_ok: true,
+      cpdlc: {
+        err: false,
+        atc_uplink_msg: {
+          header: { msg_id: 3 },
+          atc_uplink_msg_element_id: {
+            choice: "uM74Position",
+            data: { pos: { data: { fix: "FALTI" } } },
+          },
+        },
+      },
+    },
+  };
+}
+
 function makeGroup(identifiers: string[], msgUids: string[]): MessageGroupType {
   return {
     identifiers,
@@ -99,6 +119,17 @@ describe("AircraftMessagesModal", () => {
     expect(screen.getByTestId("message-group-mock")).toHaveTextContent(
       "group:UAL123",
     );
+  });
+
+  it("shows compact CPDLC insights above the raw message group", () => {
+    const group = makeGroup(["UAL123"], []);
+    group.messages = [makeCpdlcMsg("1")];
+    render(<AircraftMessagesModal messageGroup={group} onClose={vi.fn()} />);
+
+    expect(screen.getByText("CPDLC insights")).toBeInTheDocument();
+    expect(screen.getByText("Proceed direct FALTI")).toBeInTheDocument();
+    expect(screen.getByText("No matching reply received here")).toBeInTheDocument();
+    expect(screen.getByTestId("message-group-mock")).toBeInTheDocument();
   });
 
   describe("Mark-as-read behaviour", () => {

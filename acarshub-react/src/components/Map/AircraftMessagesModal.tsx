@@ -18,6 +18,7 @@ import { useEffect, useRef } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import type { MessageGroup as MessageGroupType } from "../../types";
 import { MessageGroup } from "../MessageGroup";
+import { AircraftCpdlcInsights } from "./AircraftCpdlcInsights";
 import "../../styles/components/_aircraft-messages-modal.scss";
 
 interface AircraftMessagesModalProps {
@@ -164,6 +165,7 @@ export function AircraftMessagesModal({
         </div>
 
         <div className="aircraft-messages-modal__content">
+          <AircraftCpdlcInsights messages={messageGroup.messages} />
           <MessageGroup plane={messageGroup} />
         </div>
       </div>
