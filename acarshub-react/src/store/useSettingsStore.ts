@@ -149,7 +149,7 @@ const getDefaultSettings = (): UserSettings => {
       autoClearMinutes: 60,
     },
     map: {
-      provider: "carto_dark_all",
+      provider: "osm",
       customTileUrl: undefined,
       userSelectedProvider: false,
       stationLat: 0,
@@ -391,7 +391,7 @@ export const useSettingsStore = create<SettingsState>()(
             ...state.settings,
             map: {
               ...state.settings.map,
-              provider: "carto_dark_all",
+              provider: "osm",
               userSelectedProvider: false,
             },
             updatedAt: Date.now(),

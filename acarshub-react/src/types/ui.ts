@@ -533,9 +533,9 @@ export const DEFAULT_SETTINGS: UserSettings = {
     autoClearMinutes: 60,
   },
   map: {
-    provider: "carto_dark_all", // Default for Mocha theme
+    provider: "osm", // Public street map; no API key required
     customTileUrl: undefined,
-    userSelectedProvider: false, // Allow theme-aware switching
+    userSelectedProvider: false, // Allow the default provider to be restored
     stationLat: 0,
     stationLon: 0,
     rangeRings: [100, 200, 300],

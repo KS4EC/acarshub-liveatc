@@ -47,41 +47,41 @@ describe("MapTab", () => {
     expect(panel).toHaveAttribute("aria-labelledby", "map-tab");
   });
 
-  describe("theme-aware mode", () => {
-    it("shows the theme-aware info banner when no provider has been user-selected", () => {
+  describe("default provider mode", () => {
+    it("shows the default-map info banner when no provider has been user-selected", () => {
       render(<MapTab />);
-      expect(screen.getByText(/Theme-Aware Mode Active/i)).toBeInTheDocument();
+      expect(screen.getByText(/Default Map Active/i)).toBeInTheDocument();
     });
 
-    it("hides the theme-aware banner once a provider is user-selected", () => {
+    it("hides the default-map banner once a provider is user-selected", () => {
       useSettingsStore.getState().setMapProvider("osm", true);
       render(<MapTab />);
       expect(
-        screen.queryByText(/Theme-Aware Mode Active/i),
+        screen.queryByText(/Default Map Active/i),
       ).not.toBeInTheDocument();
     });
 
-    it("shows a 'Reset to Theme-Aware Mode' button only when user-selected", () => {
+    it("shows a reset-to-OpenStreetMap button only when user-selected", () => {
       useSettingsStore.getState().setMapProvider("osm", true);
       render(<MapTab />);
       const resetButton = screen.getByRole("button", {
-        name: /Reset to Theme-Aware Mode/i,
+        name: /Reset to OpenStreetMap/i,
       });
       expect(resetButton).toBeInTheDocument();
     });
 
-    it("resets to theme-aware mode (userSelected=false) when the reset button is clicked", async () => {
+    it("resets to default mode when the reset button is clicked", async () => {
       const user = userEvent.setup();
-      useSettingsStore.getState().setMapProvider("osm", true);
+      useSettingsStore.getState().setMapProvider("carto_dark_all", true);
       render(<MapTab />);
 
       await user.click(
-        screen.getByRole("button", { name: /Reset to Theme-Aware Mode/i }),
+        screen.getByRole("button", { name: /Reset to OpenStreetMap/i }),
       );
 
-      expect(
-        useSettingsStore.getState().settings.map.userSelectedProvider,
-      ).toBe(false);
+      const map = useSettingsStore.getState().settings.map;
+      expect(map.userSelectedProvider).toBe(false);
+      expect(map.provider).toBe("osm");
     });
   });
 
@@ -98,9 +98,9 @@ describe("MapTab", () => {
       expect(state.userSelectedProvider).toBe(true);
     });
 
-    it("selecting the empty 'Default' option switches to the theme-appropriate carto provider", async () => {
+    it("selecting the empty 'Default' option switches to OpenStreetMap", async () => {
       const user = userEvent.setup();
-      useSettingsStore.getState().setMapProvider("osm", true);
+      useSettingsStore.getState().setMapProvider("carto_light_all", true);
       render(<MapTab />);
 
       const select = screen.getByLabelText("Map Provider");
@@ -108,7 +108,7 @@ describe("MapTab", () => {
 
       const state = useSettingsStore.getState().settings.map;
       expect(state.userSelectedProvider).toBe(false);
-      expect(["carto_dark_all", "carto_light_all"]).toContain(state.provider);
+      expect(state.provider).toBe("osm");
     });
 
     it("displays the current provider's friendly name", () => {

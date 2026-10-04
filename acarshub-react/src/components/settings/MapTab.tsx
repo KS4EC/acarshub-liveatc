@@ -20,7 +20,7 @@
 // ----------------------------------------------------------------------------
 
 import { ALL_PROVIDERS } from "../../config/mapProviders";
-import { useSettingsStore, useTheme } from "../../store/useSettingsStore";
+import { useSettingsStore } from "../../store/useSettingsStore";
 import type { MapProvider, MarkerSize } from "../../types";
 import { Button } from "../Button";
 import { Card } from "../Card";
@@ -29,7 +29,6 @@ import { Select } from "../Select";
 
 export function MapTab() {
   const settings = useSettingsStore((state) => state.settings);
-  const theme = useTheme();
   const mapProvider = useSettingsStore((state) => state.settings.map.provider);
   const customTileUrl = useSettingsStore(
     (state) => state.settings.map.customTileUrl,
@@ -38,6 +37,9 @@ export function MapTab() {
     (state) => state.settings.map.userSelectedProvider,
   );
   const setMapProvider = useSettingsStore((state) => state.setMapProvider);
+  const resetMapProviderToDefault = useSettingsStore(
+    (state) => state.resetMapProviderToDefault,
+  );
   const setCustomTileUrl = useSettingsStore((state) => state.setCustomTileUrl);
   const setGroundAltitudeThreshold = useSettingsStore(
     (state) => state.setGroundAltitudeThreshold,
@@ -61,9 +63,8 @@ export function MapTab() {
           {!userSelectedProvider && (
             <div className="settings-card__info">
               <p>
-                <strong>🎨 Theme-Aware Mode Active:</strong> Map automatically
-                switches between light/dark variants when you change themes.
-                Select a provider below to override.
+                <strong>Default Map Active:</strong> OpenStreetMap is used
+                without an API key. Select a provider below to override it.
               </p>
             </div>
           )}
@@ -75,16 +76,13 @@ export function MapTab() {
               value={!userSelectedProvider ? "" : mapProvider}
               onChange={(value) => {
                 if (value === "") {
-                  // Reset to theme-aware mode - trigger immediate theme switch
-                  const themeProvider =
-                    theme === "mocha" ? "carto_dark_all" : "carto_light_all";
-                  setMapProvider(themeProvider as MapProvider, false);
+                  setMapProvider("osm", false);
                 } else {
                   setMapProvider(value as MapProvider);
                 }
               }}
               options={[
-                { value: "", label: "Default (Theme Aware)" },
+                { value: "", label: "Default (OpenStreetMap)" },
                 ...ALL_PROVIDERS.map((p) => ({
                   value: p.id,
                   label: p.name,
@@ -121,23 +119,23 @@ export function MapTab() {
             <p>
               <strong>Current Provider:</strong>{" "}
               {ALL_PROVIDERS.find((p) => p.id === mapProvider)?.name ||
-                (mapProvider === "custom" ? "Custom" : "Theme-Aware")}
+                (mapProvider === "custom" ? "Custom" : "OpenStreetMap")}
             </p>
             {mapProvider === "custom" && customTileUrl && (
               <p className="settings-card__help">Custom URL: {customTileUrl}</p>
             )}
             {!userSelectedProvider && (
               <p className="settings-card__help">
-                Automatically switching between light/dark maps based on theme
+                Using the public OpenStreetMap street layer
               </p>
             )}
             {userSelectedProvider && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setMapProvider(mapProvider, false)}
+                onClick={resetMapProviderToDefault}
               >
-                Reset to Theme-Aware Mode
+                Reset to OpenStreetMap
               </Button>
             )}
           </div>
@@ -151,8 +149,8 @@ export function MapTab() {
       >
         <div className="settings-card__content">
           <p className="settings-card__help">
-            <strong>Default (Theme Aware):</strong> Automatically switches
-            between dark/light map variants when you change themes.
+            <strong>Default (OpenStreetMap):</strong> Public street map tiles
+            that do not require an API key.
           </p>
 
           <p className="settings-card__help">

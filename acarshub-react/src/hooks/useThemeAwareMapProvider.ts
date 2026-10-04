@@ -19,24 +19,16 @@ import { useSettingsStore, useTheme } from "../store/useSettingsStore";
 import type { MapProvider } from "../types";
 import { mapLogger } from "../utils/logger";
 
-/**
- * Theme-aware map provider mappings
- * Automatically switches between light/dark map variants based on theme
- */
-const THEME_MAP_PROVIDERS: Record<"mocha" | "latte", MapProvider> = {
-  mocha: "carto_dark_all", // Dark theme → dark map
-  latte: "carto_light_all", // Light theme → light map
-};
+const DEFAULT_MAP_PROVIDER: MapProvider = "osm";
 
 /**
  * Hook: useThemeAwareMapProvider
  *
- * Automatically switches map provider based on theme (Mocha/Latte)
- * ONLY if the user hasn't explicitly selected a provider.
+ * Keeps the map on the no-key OpenStreetMap default unless the user has
+ * explicitly selected another provider.
  *
  * Default behavior:
- * - Mocha theme → CARTO dark_all
- * - Latte theme → CARTO light_all
+ * - Both themes → OpenStreetMap
  *
  * User override:
  * - If user selects a provider in Settings, this hook stops auto-switching
@@ -57,19 +49,15 @@ export function useThemeAwareMapProvider(): void {
       return;
     }
 
-    // Get theme-appropriate provider
-    const themeProvider = THEME_MAP_PROVIDERS[theme];
-
     // Only update if different from current
-    if (mapSettings.provider !== themeProvider) {
-      mapLogger.info("Auto-switching map provider to match theme", {
+    if (mapSettings.provider !== DEFAULT_MAP_PROVIDER) {
+      mapLogger.info("Restoring default map provider", {
         theme,
         oldProvider: mapSettings.provider,
-        newProvider: themeProvider,
+        newProvider: DEFAULT_MAP_PROVIDER,
       });
 
-      // Set provider with userSelected=false to maintain auto-switching
-      setMapProvider(themeProvider, false);
+      setMapProvider(DEFAULT_MAP_PROVIDER, false);
     }
   }, [
     theme,

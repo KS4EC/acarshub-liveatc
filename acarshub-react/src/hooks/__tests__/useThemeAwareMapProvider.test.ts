@@ -5,9 +5,9 @@
 /**
  * useThemeAwareMapProvider Hook Tests
  *
- * Why this exists: this hook is the only mechanism that keeps the map
- * tile provider visually aligned with the Catppuccin theme (Mocha →
- * carto_dark_all, Latte → carto_light_all).  It also implements an
+ * Why this exists: this hook keeps the map on the public OpenStreetMap
+ * default unless the user explicitly selects another provider. It also
+ * implements an
  * explicit-override escape hatch: once the user picks a provider from
  * Settings (userSelectedProvider=true) the hook MUST stop auto-
  * switching, forever, until they reset.
@@ -19,15 +19,13 @@
  *     deliberate choice on every theme change.  No error, no log line
  *     they would notice; just "my map keeps reverting".
  *
- *  2. Identity check regression — if the `mapSettings.provider !==
- *     themeProvider` guard is dropped, the hook calls setMapProvider
+ *  2. Identity check regression — if the provider guard is dropped, the
+ *     hook calls setMapProvider
  *     on every render, which would in turn re-fire the effect because
  *     setMapProvider mutates state the effect depends on.  Render loop.
  *
- *  3. Mapping regression — if the THEME_MAP_PROVIDERS lookup gets
- *     swapped (Mocha→light_all, Latte→dark_all) the map will be
- *     un-readable against the theme.  Catppuccin contrast contract
- *     broken; sighted-user UX regression.
+ *  3. Default regression — a provider that needs extra configuration can
+ *     silently replace the public street-map background.
  *
  *  4. Reactivity regression — if the effect's dependency array drifts
  *     (e.g. drops `theme`), switching themes post-mount will leave the
@@ -52,20 +50,20 @@ import { useThemeAwareMapProvider } from "../useThemeAwareMapProvider";
 beforeEach(() => {
   const store = useSettingsStore.getState();
   store.setTheme("mocha");
-  // Land on the wrong-for-mocha provider with userSelected=false so
+  // Land on a non-default provider with userSelected=false so
   // the hook has work to do unless explicitly overridden.
   store.setMapProvider("carto_light_all", false);
 });
 
 describe("useThemeAwareMapProvider", () => {
   describe("auto-switching (no user override)", () => {
-    it("switches to carto_dark_all when theme is mocha", () => {
+    it("switches to OpenStreetMap when theme is mocha", () => {
       useSettingsStore.getState().setTheme("mocha");
 
       renderHook(() => useThemeAwareMapProvider());
 
       const map = useSettingsStore.getState().settings.map;
-      expect(map.provider).toBe("carto_dark_all");
+      expect(map.provider).toBe("osm");
       // Critical: auto-switch MUST preserve userSelectedProvider=false
       // so subsequent theme changes are still picked up. A regression
       // that flips this would freeze the map provider after first
@@ -73,7 +71,7 @@ describe("useThemeAwareMapProvider", () => {
       expect(map.userSelectedProvider).toBe(false);
     });
 
-    it("switches to carto_light_all when theme is latte", () => {
+    it("switches to OpenStreetMap when theme is latte", () => {
       useSettingsStore.getState().setTheme("latte");
       // Reset provider to something other than the latte target so
       // the hook has work to do.
@@ -82,7 +80,7 @@ describe("useThemeAwareMapProvider", () => {
       renderHook(() => useThemeAwareMapProvider());
 
       const map = useSettingsStore.getState().settings.map;
-      expect(map.provider).toBe("carto_light_all");
+      expect(map.provider).toBe("osm");
       expect(map.userSelectedProvider).toBe(false);
     });
 
@@ -91,18 +89,14 @@ describe("useThemeAwareMapProvider", () => {
       // is ever dropped from the effect deps, this fails.
       const { rerender } = renderHook(() => useThemeAwareMapProvider());
 
-      // Initial mount lands on carto_dark_all (mocha baseline).
-      expect(useSettingsStore.getState().settings.map.provider).toBe(
-        "carto_dark_all",
-      );
+      // Initial mount lands on the OpenStreetMap baseline.
+      expect(useSettingsStore.getState().settings.map.provider).toBe("osm");
 
-      // Flip theme; the hook's effect should re-run and re-sync.
+      // Flip theme; the public street map remains the default.
       useSettingsStore.getState().setTheme("latte");
       rerender();
 
-      expect(useSettingsStore.getState().settings.map.provider).toBe(
-        "carto_light_all",
-      );
+      expect(useSettingsStore.getState().settings.map.provider).toBe("osm");
     });
   });
 
@@ -112,7 +106,7 @@ describe("useThemeAwareMapProvider", () => {
       // user's deliberate choice gets clobbered on every theme change.
       useSettingsStore.getState().setMapProvider("osm", true);
       // Theme is mocha (from beforeEach); without the guard the hook
-      // would force carto_dark_all here.
+      // would force OpenStreetMap here.
       renderHook(() => useThemeAwareMapProvider());
 
       const map = useSettingsStore.getState().settings.map;
@@ -150,15 +144,15 @@ describe("useThemeAwareMapProvider", () => {
 
   describe("no-op when already aligned (render-loop guard)", () => {
     it("does not call setMapProvider when provider already matches theme", () => {
-      // If the identity guard (provider !== themeProvider) regresses,
+      // If the identity guard regresses,
       // the hook would call setMapProvider every render, which
       // mutates state the effect depends on, which re-fires the
       // effect, which... — render loop. We can't directly assert
       // "setMapProvider was not called" without mocking the store,
       // but we CAN assert userSelectedProvider stays exactly false
-      // and provider stays exactly carto_dark_all across multiple
+      // and provider stays exactly osm across multiple
       // rerenders without any test-side mutation.
-      useSettingsStore.getState().setMapProvider("carto_dark_all", false);
+      useSettingsStore.getState().setMapProvider("osm", false);
 
       const { rerender } = renderHook(() => useThemeAwareMapProvider());
       const beforeUpdatedAt = useSettingsStore.getState().settings.updatedAt;
@@ -170,7 +164,7 @@ describe("useThemeAwareMapProvider", () => {
 
       const after = useSettingsStore.getState().settings.map;
       const afterUpdatedAt = useSettingsStore.getState().settings.updatedAt;
-      expect(after.provider).toBe("carto_dark_all");
+      expect(after.provider).toBe("osm");
       expect(after.userSelectedProvider).toBe(false);
       // settings.updatedAt is the cheapest tripwire for "did
       // setMapProvider fire?": setMapProvider stamps it on every

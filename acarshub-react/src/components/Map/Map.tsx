@@ -232,7 +232,7 @@ export function MapComponent({
 
     if (!tileUrl) {
       mapLogger.warn(
-        "No tile URL for provider, falling back to CARTO English",
+        "No tile URL for provider, falling back to OpenStreetMap",
         { provider },
       );
       return {
@@ -241,7 +241,7 @@ export function MapComponent({
           "raster-tiles": {
             type: "raster",
             tiles: [
-              "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+              "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
             ],
             tileSize: 256,
             attribution: providerConfig?.attribution || "",
@@ -286,10 +286,11 @@ export function MapComponent({
           "base-tiles": {
             type: "raster",
             tiles: [
-              "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+              "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
             ],
             tileSize: 256,
-            attribution: 'Powered by <a href="https://carto.com">CARTO.com</a>',
+            attribution:
+              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
           },
           "chart-tiles": {
             type: "raster",
