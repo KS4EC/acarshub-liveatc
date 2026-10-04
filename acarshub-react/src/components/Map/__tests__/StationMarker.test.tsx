@@ -115,12 +115,36 @@ describe("StationMarker", () => {
       const svg = screen.getByRole("img", { name: /ground station/i });
       expect(svg).toBeInTheDocument();
       // <title> element nested inside <svg> provides screen-reader text
-      expect(screen.getByText("Ground Station")).toBeInTheDocument();
+      expect(
+        screen.getByText("Ground Station: Ground Station"),
+      ).toBeInTheDocument();
     });
 
     it("wraps the SVG in a div.station-marker container", () => {
       const { container } = render(<StationMarker />);
       expect(container.querySelector(".station-marker")).not.toBeNull();
+    });
+
+    it("renders a labeled marker for every configured receiver site", () => {
+      useAppStore.getState().setDecoders({
+        ...baseDecoders,
+        adsb: {
+          ...baseDecoders.adsb,
+          sites: [
+            { name: "Mocksville", lat: 35.9023, lon: -80.56819 },
+            { name: "PBI", lat: 26.68841, lon: -80.1182 },
+          ],
+        },
+      });
+
+      render(<StationMarker />);
+
+      expect(capturedMarkers).toHaveLength(2);
+      expect(capturedMarkers[1]).toMatchObject({
+        latitude: 26.68841,
+        longitude: -80.1182,
+      });
+      expect(screen.getByText("Ground Station: PBI")).toBeInTheDocument();
     });
   });
 

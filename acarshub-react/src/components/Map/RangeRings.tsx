@@ -18,6 +18,7 @@ import { useCallback, useMemo } from "react";
 import { Layer, Source, useMap } from "react-map-gl/maplibre";
 import { useAppStore } from "../../store/useAppStore";
 import { useSettingsStore, useTheme } from "../../store/useSettingsStore";
+import { resolveAdsbSites } from "../../utils/adsbSites";
 import { createLogger } from "../../utils/logger";
 
 const logger = createLogger("RangeRings");
@@ -171,15 +172,11 @@ export function RangeRings({ viewState }: RangeRingsProps) {
   };
   const themeColors = theme === "mocha" ? colors.mocha : colors.latte;
 
-  // Determine station location (settings override backend)
-  let stationLat = settings.map.stationLat;
-  let stationLon = settings.map.stationLon;
-
-  // Fallback to backend decoder config if user hasn't set custom location
-  if (stationLat === 0 && stationLon === 0 && decoders?.adsb) {
-    stationLat = decoders.adsb.lat;
-    stationLon = decoders.adsb.lon;
-  }
+  const stations = resolveAdsbSites(
+    decoders?.adsb,
+    settings.map.stationLat,
+    settings.map.stationLon,
+  );
 
   /**
    * Calculate distance between two points in nautical miles
@@ -381,7 +378,7 @@ export function RangeRings({ viewState }: RangeRingsProps) {
     return null;
   }
 
-  if (stationLat === 0 && stationLon === 0) {
+  if (stations.length === 0) {
     return null;
   }
 
@@ -496,17 +493,20 @@ export function RangeRings({ viewState }: RangeRingsProps) {
    */
   const geojsonData = {
     type: "FeatureCollection" as const,
-    features: rangeRings.map((radius, index) => ({
-      type: "Feature" as const,
-      properties: {
-        radius,
-        index,
-      },
-      geometry: {
-        type: "Polygon" as const,
-        coordinates: [createCircle(stationLon, stationLat, radius)],
-      },
-    })),
+    features: stations.flatMap((station) =>
+      rangeRings.map((radius, index) => ({
+        type: "Feature" as const,
+        properties: {
+          radius,
+          index,
+          station: station.name,
+        },
+        geometry: {
+          type: "Polygon" as const,
+          coordinates: [createCircle(station.lon, station.lat, radius)],
+        },
+      })),
+    ),
   };
 
   /**
@@ -514,18 +514,21 @@ export function RangeRings({ viewState }: RangeRingsProps) {
    */
   const labelPointsData = {
     type: "FeatureCollection" as const,
-    features: rangeRings.flatMap((radius) =>
-      createLabelPoints(stationLon, stationLat, radius).map((coords) => ({
-        type: "Feature" as const,
-        properties: {
-          radius,
-          label: `${radius} NM`,
-        },
-        geometry: {
-          type: "Point" as const,
-          coordinates: coords,
-        },
-      })),
+    features: stations.flatMap((station) =>
+      rangeRings.flatMap((radius) =>
+        createLabelPoints(station.lon, station.lat, radius).map((coords) => ({
+          type: "Feature" as const,
+          properties: {
+            radius,
+            station: station.name,
+            label: `${radius} NM`,
+          },
+          geometry: {
+            type: "Point" as const,
+            coordinates: coords,
+          },
+        })),
+      ),
     ),
   };
 

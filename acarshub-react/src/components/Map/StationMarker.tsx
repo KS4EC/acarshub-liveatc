@@ -17,6 +17,7 @@
 import { Marker } from "react-map-gl/maplibre";
 import { useAppStore } from "../../store/useAppStore";
 import { useSettingsStore } from "../../store/useSettingsStore";
+import { resolveAdsbSites } from "../../utils/adsbSites";
 
 /**
  * StationMarker Component
@@ -40,33 +41,34 @@ export function StationMarker() {
     return null;
   }
 
-  // Determine station location (settings override backend)
-  let stationLat = settings.map.stationLat;
-  let stationLon = settings.map.stationLon;
-
-  // Fallback to backend decoder config if user hasn't set custom location
-  if (stationLat === 0 && stationLon === 0 && decoders?.adsb) {
-    stationLat = decoders.adsb.lat;
-    stationLon = decoders.adsb.lon;
-  }
+  const stations = resolveAdsbSites(
+    decoders?.adsb,
+    settings.map.stationLat,
+    settings.map.stationLon,
+  );
 
   // Don't render if we have no valid location
-  if (stationLat === 0 && stationLon === 0) {
+  if (stations.length === 0) {
     return null;
   }
 
-  return (
-    <Marker longitude={stationLon} latitude={stationLat} anchor="center">
-      <div className="station-marker" title="Ground Station">
+  return stations.map((station) => (
+    <Marker
+      key={`${station.name}-${station.lat}-${station.lon}`}
+      longitude={station.lon}
+      latitude={station.lat}
+      anchor="center"
+    >
+      <div className="station-marker" title={`Ground Station: ${station.name}`}>
         <svg
           width="20"
           height="20"
           viewBox="0 0 20 20"
           xmlns="http://www.w3.org/2000/svg"
           role="img"
-          aria-label="Ground Station"
+          aria-label={`Ground Station: ${station.name}`}
         >
-          <title>Ground Station</title>
+          <title>{`Ground Station: ${station.name}`}</title>
           {/* Radio tower icon */}
           {/* Base circle */}
           <circle
@@ -113,5 +115,5 @@ export function StationMarker() {
         </svg>
       </div>
     </Marker>
-  );
+  ));
 }

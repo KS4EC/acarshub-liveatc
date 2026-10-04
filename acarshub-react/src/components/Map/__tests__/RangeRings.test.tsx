@@ -176,6 +176,39 @@ describe("RangeRings", () => {
       expect(radii).toEqual([100, 200, 300]);
     });
 
+    it("draws compact labels for every receiver site", () => {
+      useSettingsStore.getState().setStationLocation(0, 0);
+      useAppStore.setState({
+        decoders: makeDecoders({
+          sites: [
+            { name: "Mocksville", lat: 35.9023, lon: -80.56819 },
+            { name: "PBI", lat: 26.68841, lon: -80.1182 },
+          ],
+        }),
+      });
+
+      render(<RangeRings />);
+
+      const ringSource = capturedSources.find((s) => s.id === "range-rings");
+      const ringData = ringSource?.data as {
+        features: Array<{ properties: { station: string } }>;
+      };
+      expect(ringData.features).toHaveLength(6);
+      expect(new Set(ringData.features.map((f) => f.properties.station))).toEqual(
+        new Set(["Mocksville", "PBI"]),
+      );
+
+      const labelSource = capturedSources.find(
+        (s) => s.id === "range-rings-labels",
+      );
+      const labelData = labelSource?.data as {
+        features: Array<{ properties: { label: string } }>;
+      };
+      expect(
+        labelData.features.filter((f) => f.properties.label === "100 NM"),
+      ).toHaveLength(8);
+    });
+
     it("falls back to [100, 200, 300] when settings has empty rangeRings AND no map", () => {
       useSettingsStore.getState().setRangeRings([]);
 

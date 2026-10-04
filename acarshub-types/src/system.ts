@@ -136,6 +136,12 @@ export interface Decoders {
     lat: number;
     lon: number;
     range_rings: boolean;
+    /** Receiver sites whose markers and range rings should be drawn. */
+    sites?: Array<{
+      name: string;
+      lat: number;
+      lon: number;
+    }>;
     /** URL to fetch the Hey What's That antenna coverage GeoJSON (includes ?v= cache-bust param). Undefined when not configured. */
     heywhatsthat_url?: string;
   };

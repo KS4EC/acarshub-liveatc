@@ -174,6 +174,12 @@ function isEnabled(value: string | undefined, defaultValue = false): boolean {
 /**
  * Zod schema for configuration validation
  */
+const AdsbSiteSchema = z.object({
+  name: z.string().trim().min(1),
+  lat: z.number().min(-90).max(90),
+  lon: z.number().min(-180).max(180),
+});
+
 const ConfigSchema = z.object({
   version: z.string(),
   allowRemoteUpdates: z.boolean(),
@@ -191,6 +197,7 @@ const ConfigSchema = z.object({
   adsbUrl: z.string(),
   adsbLat: z.number(),
   adsbLon: z.number(),
+  adsbSites: z.array(AdsbSiteSchema),
   enableRangeRings: z.boolean(),
   heywhatsThatId: z.string(),
   heywhatsThatAlts: z.string(),
@@ -348,6 +355,9 @@ export const ADSB_LAT = process.env.ADSB_LAT
 export const ADSB_LON = process.env.ADSB_LON
   ? Number.parseFloat(process.env.ADSB_LON)
   : 0.0;
+export const ADSB_SITES = process.env.ADSB_SITES
+  ? z.array(AdsbSiteSchema).parse(JSON.parse(process.env.ADSB_SITES))
+  : [];
 export const ENABLE_RANGE_RINGS = !isEnabled(
   process.env.DISABLE_RANGE_RINGS,
   false,
@@ -699,6 +709,7 @@ export function getConfig(): Config & {
     adsbUrl: ADSB_URL,
     adsbLat: ADSB_LAT,
     adsbLon: ADSB_LON,
+    adsbSites: ADSB_SITES,
     enableRangeRings: ENABLE_RANGE_RINGS,
     heywhatsThatId: HEYWHATSTHAT_ID,
     heywhatsThatAlts: HEYWHATSTHAT_ALTS,

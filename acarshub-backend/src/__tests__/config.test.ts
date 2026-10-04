@@ -373,6 +373,20 @@ describe("config module", () => {
       expect(ADSB_LON).toBeCloseTo(-122.4194);
     });
 
+    it("should parse multiple ADS-B receiver sites", async () => {
+      process.env.ADSB_SITES = JSON.stringify([
+        { name: "Mocksville", lat: 35.9023, lon: -80.56819 },
+        { name: "PBI", lat: 26.68841, lon: -80.1182 },
+      ]);
+
+      const { ADSB_SITES } = await import("../config.js");
+
+      expect(ADSB_SITES).toEqual([
+        { name: "Mocksville", lat: 35.9023, lon: -80.56819 },
+        { name: "PBI", lat: 26.68841, lon: -80.1182 },
+      ]);
+    });
+
     it("should enable range rings by default", async () => {
       const { ENABLE_RANGE_RINGS } = await import("../config.js");
       expect(ENABLE_RANGE_RINGS).toBe(true);

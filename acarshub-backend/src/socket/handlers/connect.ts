@@ -90,6 +90,7 @@ export function handleConnect(
         enabled: config.enableAdsb,
         lat: config.adsbLat,
         lon: config.adsbLon,
+        sites: config.adsbSites,
         range_rings: config.enableRangeRings,
         heywhatsthat_url: getHeyWhatsThatUrl(),
       },
