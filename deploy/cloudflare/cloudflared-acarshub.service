@@ -1,0 +1,19 @@
+[Unit]
+Description=Cloudflare Tunnel for ACARS Hub
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=cloudflared
+Group=cloudflared
+ExecStart=/usr/local/bin/cloudflared tunnel --no-autoupdate --protocol http2 run --token-file /etc/cloudflared/acarshub-mocksville.token
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
