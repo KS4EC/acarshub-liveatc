@@ -17,7 +17,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getAircraftColor,
+  getAircraftOutlineColor,
   getBaseMarker,
+  getDump1090AltitudeColor,
   shouldRotate,
   svgShapeToURI,
 } from "../aircraftIcons";
@@ -191,6 +193,12 @@ describe("svgShapeToURI", () => {
     expect(white.svg).not.toBe(red.svg);
   });
 
+  it("encodes a separate outline color into the SVG data", () => {
+    const result = svgShapeToURI("airliner", 0.5, 1, "#ffffff", "#00ffff");
+    const decoded = atob(result.svg.replace("data:image/svg+xml;base64,", ""));
+    expect(decoded).toContain('stroke="#00ffff"');
+  });
+
   it("returns a valid base64-decodable payload containing svg tag", () => {
     const result = svgShapeToURI("airliner");
     const base64 = result.svg.replace("data:image/svg+xml;base64,", "");
@@ -234,8 +242,8 @@ describe("getAircraftColor", () => {
           "--color-peach": "#ffaa00",
           "--color-mauve": "#aa00ff",
           "--color-overlay1": "#888888",
-          "--color-text": "#ffffff",
-          "--color-aircraft-default": "#1e66f5",
+          "--color-sky": "#00ffff",
+          "--color-teal": "#00aaaa",
         };
         return map[prop] ?? "";
       },
@@ -247,12 +255,14 @@ describe("getAircraftColor", () => {
   });
 
   describe("alert priority", () => {
-    it("returns red when hasAlerts is true, regardless of other flags", () => {
-      expect(getAircraftColor(true, true, 35000)).toBe("#ff0000");
-      expect(getAircraftColor(true, false, "ground")).toBe("#ff0000");
+    it("returns red in decoder mode when hasAlerts is true", () => {
       expect(getAircraftColor(true, false, undefined, true, "ACARS")).toBe(
         "#ff0000",
       );
+    });
+
+    it("keeps altitude fill in altitude mode so alerts can use a glow", () => {
+      expect(getAircraftColor(true, true, 35000)).toBe("hsl(275,85%,50%)");
     });
   });
 
@@ -300,9 +310,8 @@ describe("getAircraftColor", () => {
     });
 
     it("falls through decoder coloring when colorByDecoder is false", () => {
-      // Even with a decoder type provided, colorByDecoder=false means use message state
       const result = getAircraftColor(false, true, undefined, false, "ACARS");
-      expect(result).toBe("#00ff00"); // green = hasMessages
+      expect(result).toBe("hsl(0,0%,40%)");
     });
 
     it("falls through decoder coloring when decoder type is empty string", () => {
@@ -312,44 +321,38 @@ describe("getAircraftColor", () => {
     });
   });
 
-  describe("message state coloring", () => {
-    it("returns green when hasMessages is true and no alerts/decoder override", () => {
-      expect(getAircraftColor(false, true, 35000)).toBe("#00ff00");
+  describe("dump1090 altitude coloring", () => {
+    it("uses dump1090 ground and unknown colors", () => {
+      expect(getDump1090AltitudeColor("ground")).toBe("hsl(15,80%,20%)");
+      expect(getDump1090AltitudeColor(undefined)).toBe("hsl(0,0%,40%)");
+    });
+
+    it("matches the low, middle, and high altitude color points", () => {
+      expect(getDump1090AltitudeColor(2000)).toBe("hsl(20,85%,50%)");
+      expect(getDump1090AltitudeColor(10000)).toBe("hsl(140,85%,50%)");
+      expect(getDump1090AltitudeColor(40000)).toBe("hsl(300,85%,50%)");
+    });
+
+    it("interpolates and clamps hue while rounding to five degrees", () => {
+      expect(getDump1090AltitudeColor(6000)).toBe("hsl(80,85%,50%)");
+      expect(getDump1090AltitudeColor(-1000)).toBe("hsl(20,85%,50%)");
+      expect(getDump1090AltitudeColor(45000)).toBe("hsl(300,85%,50%)");
     });
   });
 
-  describe("ground coloring", () => {
-    it('returns overlay1 when altitude is the string "ground"', () => {
-      expect(getAircraftColor(false, false, "ground")).toBe("#888888");
+  describe("source outlines", () => {
+    it("uses cyan for an ACARS-derived position", () => {
+      expect(getAircraftOutlineColor("acars", true, "ACARS")).toBe("#00ffff");
     });
 
-    it("returns overlay1 when altitude is at or below the default threshold (500)", () => {
-      expect(getAircraftColor(false, false, 500)).toBe("#888888");
-      expect(getAircraftColor(false, false, 0)).toBe("#888888");
-      expect(getAircraftColor(false, false, 499)).toBe("#888888");
+    it("uses black for ADS-B-only aircraft", () => {
+      expect(getAircraftOutlineColor("adsb", false)).toBe("#000000");
     });
 
-    it("does NOT return overlay1 when altitude is above the threshold", () => {
-      expect(getAircraftColor(false, false, 501)).toBe("#1e66f5");
-    });
-
-    it("respects a custom ground threshold", () => {
-      expect(getAircraftColor(false, false, 1000, false, undefined, 1000)).toBe(
-        "#888888",
-      );
-      expect(getAircraftColor(false, false, 1001, false, undefined, 1000)).toBe(
-        "#1e66f5",
-      );
-    });
-  });
-
-  describe("default (airborne, no messages)", () => {
-    it("returns the high-contrast map color when airborne", () => {
-      expect(getAircraftColor(false, false, 35000)).toBe("#1e66f5");
-    });
-
-    it("returns the high-contrast map color when altitude is undefined", () => {
-      expect(getAircraftColor(false, false, undefined)).toBe("#1e66f5");
+    it("uses decoder colors for ADS-B positions with messages", () => {
+      expect(getAircraftOutlineColor("adsb", true, "ACARS")).toBe("#0000ff");
+      expect(getAircraftOutlineColor("adsb", true, "VDLM")).toBe("#00ff00");
+      expect(getAircraftOutlineColor("adsb", true)).toBe("#00aaaa");
     });
   });
 });

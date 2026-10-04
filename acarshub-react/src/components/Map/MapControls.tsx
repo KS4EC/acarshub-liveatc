@@ -223,7 +223,7 @@ export function MapControls({
           icon={IconPalette}
           active={mapSettings.colorByDecoder}
           onClick={() => setColorByDecoder(!mapSettings.colorByDecoder)}
-          tooltip={`Color By: ${mapSettings.colorByDecoder ? "Decoder Type" : "Message State"}`}
+          tooltip={`Color By: ${mapSettings.colorByDecoder ? "Decoder Type" : "Altitude"}`}
         />
       </div>
 

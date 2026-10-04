@@ -190,6 +190,7 @@ const makeSettings = (
     mapSidebarWidth: 408,
     mapSidebarCollapsed: false,
     ...overrides,
+    showOnlyAcarsPositions: overrides?.showOnlyAcarsPositions ?? false,
   },
   advanced: {
     logLevel: "warn",

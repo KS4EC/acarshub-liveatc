@@ -116,6 +116,7 @@ export function svgShapeToURI(
   strokeWidth = 0.5,
   scale = 1.0,
   color = "#ffffff",
+  strokeColor = "#000000",
 ): SVGResult {
   const shape = shapes[shapeName] || shapes.unknown;
 
@@ -127,8 +128,9 @@ export function svgShapeToURI(
   // If shape has pre-defined SVG string, use it
   if (shape.svg) {
     const svg = shape.svg
+      .replaceAll("#5a5a5a", color)
       .replace("fillColor", color)
-      .replace("strokeColor", "#000000")
+      .replaceAll("strokeColor", strokeColor)
       .replace("strokeWidth", String(finalStrokeWidth))
       .replace("SIZE", `width="${wi}px" height="${he}px"`);
 
@@ -153,7 +155,7 @@ export function svgShapeToURI(
   // Add main path(s)
   const paths = Array.isArray(shape.path) ? shape.path : [shape.path || ""];
   for (const path of paths) {
-    svg += `<path fill="${color}" stroke="#000000" stroke-width="${2 * finalStrokeWidth}" paint-order="stroke" d="${path}"/>`;
+    svg += `<path fill="${color}" stroke="${strokeColor}" stroke-width="${2 * finalStrokeWidth}" paint-order="stroke" d="${path}"/>`;
   }
 
   // Add accent path(s) if present
@@ -179,6 +181,80 @@ export function svgShapeToURI(
 }
 
 /**
+ * Match dump1090-fa's default altitude-to-color mapping.
+ *
+ * Airborne hue is linearly interpolated between orange at 2,000 ft,
+ * light green at 10,000 ft, and magenta at 40,000 ft. Dump1090 rounds
+ * HSL components to five-unit increments before rendering.
+ */
+export function getDump1090AltitudeColor(
+  altitude?: number | "ground",
+): string {
+  if (altitude === undefined) return "hsl(0,0%,40%)";
+  if (altitude === "ground") return "hsl(15,80%,20%)";
+
+  const points = [
+    { altitude: 2000, hue: 20 },
+    { altitude: 10000, hue: 140 },
+    { altitude: 40000, hue: 300 },
+  ];
+
+  let hue = points[0].hue;
+  for (let index = points.length - 1; index >= 0; index -= 1) {
+    const point = points[index];
+    if (altitude > point.altitude) {
+      const next = points[index + 1];
+      hue = next
+        ? point.hue +
+          ((next.hue - point.hue) * (altitude - point.altitude)) /
+            (next.altitude - point.altitude)
+        : point.hue;
+      break;
+    }
+  }
+
+  const roundedHue = Math.round(hue / 5) * 5;
+  return `hsl(${roundedHue},85%,50%)`;
+}
+
+/**
+ * Use the marker outline for reception provenance while reserving fill for
+ * altitude. ADS-B-only positions retain dump1090's black outline. Aircraft
+ * with decoder traffic use the existing decoder palette, and positions
+ * derived directly from ACARS use the sky accent.
+ */
+export function getAircraftOutlineColor(
+  positionSource: "adsb" | "acars",
+  hasMessages: boolean,
+  decoderType?: string,
+): string {
+  if (positionSource === "acars") {
+    return getComputedStyle(document.documentElement)
+      .getPropertyValue("--color-sky")
+      .trim();
+  }
+
+  if (!hasMessages) return "#000000";
+
+  const computedStyle = getComputedStyle(document.documentElement);
+  switch (decoderType?.toUpperCase()) {
+    case "ACARS":
+      return computedStyle.getPropertyValue("--color-blue").trim();
+    case "VDLM":
+    case "VDL-M2":
+      return computedStyle.getPropertyValue("--color-green").trim();
+    case "HFDL":
+      return computedStyle.getPropertyValue("--color-yellow").trim();
+    case "IMSL":
+      return computedStyle.getPropertyValue("--color-peach").trim();
+    case "IRDM":
+      return computedStyle.getPropertyValue("--color-mauve").trim();
+    default:
+      return computedStyle.getPropertyValue("--color-teal").trim();
+  }
+}
+
+/**
  * Get aircraft icon color based on state or decoder type
  *
  * Uses CSS variables for theme-aware colors
@@ -199,6 +275,10 @@ export function getAircraftColor(
   decoderType?: string,
   groundThreshold = 500,
 ): string {
+  if (!colorByDecoder) {
+    return getDump1090AltitudeColor(altitude);
+  }
+
   // Get computed CSS variables from document root
   const root = document.documentElement;
   const computedStyle = getComputedStyle(root);
@@ -226,7 +306,7 @@ export function getAircraftColor(
     }
   }
 
-  // Has ACARS messages = Catppuccin green (legacy message state coloring)
+  // Has ACARS messages = Catppuccin green
   if (hasMessages) {
     return computedStyle.getPropertyValue("--color-green").trim();
   }

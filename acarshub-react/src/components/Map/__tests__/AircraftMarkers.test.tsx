@@ -128,6 +128,7 @@ const { svgShapeToURI } = vi.hoisted(() => ({
 vi.mock("../../../utils/aircraftIcons", () => ({
   getBaseMarker: () => ({ name: "jet_swept", scale: 1.0 }),
   getAircraftColor: () => "#ffffff",
+  getAircraftOutlineColor: () => "#000000",
   svgShapeToURI,
   shouldRotate: () => true,
 }));
@@ -468,6 +469,7 @@ describe("AircraftMarkers", () => {
         0.5,
         expect.closeTo(1.5, 10),
         "#ffffff",
+        "#000000",
       );
     });
 
@@ -485,6 +487,7 @@ describe("AircraftMarkers", () => {
         0.5,
         expect.closeTo(1.2, 10),
         "#ffffff",
+        "#000000",
       );
     });
 
@@ -502,6 +505,7 @@ describe("AircraftMarkers", () => {
         0.5,
         expect.closeTo(1.875, 10),
         "#ffffff",
+        "#000000",
       );
     });
 
@@ -525,7 +529,12 @@ describe("AircraftMarkers", () => {
       useSettingsStore.setState({
         settings: {
           ...current,
-          map: { ...current.map, useSprites: true, markerSize: "small" },
+          map: {
+            ...current.map,
+            useSprites: true,
+            colorByDecoder: true,
+            markerSize: "small",
+          },
         },
       });
 
@@ -579,7 +588,12 @@ describe("AircraftMarkers", () => {
       useSettingsStore.setState({
         settings: {
           ...current,
-          map: { ...current.map, useSprites: true, markerSize: "large" },
+          map: {
+            ...current.map,
+            useSprites: true,
+            colorByDecoder: true,
+            markerSize: "large",
+          },
         },
       });
 

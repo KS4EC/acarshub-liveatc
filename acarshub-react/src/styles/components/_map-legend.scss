@@ -165,6 +165,42 @@
       background-color: var(--color-red);
     }
 
+    &--altitude {
+      width: 72px;
+      background: linear-gradient(
+        90deg,
+        hsl(20, 85%, 50%),
+        hsl(140, 85%, 50%),
+        hsl(300, 85%, 50%)
+      );
+    }
+
+    &--ground-dump1090 {
+      background-color: hsl(15, 80%, 20%);
+    }
+
+    &--unknown-altitude {
+      background-color: hsl(0, 0%, 40%);
+    }
+
+    &--outline-adsb {
+      background-color: var(--color-surface1);
+      border-color: #000;
+      border-width: 4px;
+    }
+
+    &--outline-acars-position {
+      background-color: var(--color-surface1);
+      border-color: var(--color-sky);
+      border-width: 4px;
+    }
+
+    &--outline-decoder {
+      background-color: var(--color-surface1);
+      border-color: var(--color-blue);
+      border-width: 4px;
+    }
+
     // Legacy message state color
     &--messages {
       background-color: var(--color-green);

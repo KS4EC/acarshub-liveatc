@@ -26,6 +26,7 @@ import { useSettingsStore } from "../../store/useSettingsStore";
 import type { MessageGroup } from "../../types";
 import {
   getAircraftColor,
+  getAircraftOutlineColor,
   getBaseMarker,
   shouldRotate,
   svgShapeToURI,
@@ -225,6 +226,7 @@ export function AircraftMarkers({
   const groundAltitudeThreshold = useSettingsStore(
     (state) => state.settings.map.groundAltitudeThreshold,
   );
+  const renderSprites = useSprites && colorByDecoder;
   const [localHoveredAircraft, setLocalHoveredAircraft] =
     useState<HoveredTooltipState | null>(null);
   const {
@@ -302,7 +304,7 @@ export function AircraftMarkers({
   // Preload spritesheet on mount with timeout
   useEffect(() => {
     mapLogger.debug("Map settings loaded", { mapSettings, useSprites });
-    if (useSprites) {
+    if (renderSprites) {
       const loader = getSpriteLoader();
       mapLogger.debug("Sprite loader state", { isLoaded: loader.isLoaded() });
       if (!loader.isLoaded()) {
@@ -338,7 +340,7 @@ export function AircraftMarkers({
         mapLogger.debug("Sprites already loaded");
       }
     }
-  }, [useSprites, mapSettings]);
+  }, [renderSprites, mapSettings, useSprites]);
 
   // Pair ADS-B aircraft with ACARS messages (or use external aircraft if provided)
   const pairedAircraft = useMemo(() => {
@@ -417,10 +419,10 @@ export function AircraftMarkers({
   const aircraftMarkers = useMemo(() => {
     const markers: AircraftMarkerData[] = [];
     const spriteLoader =
-      useSprites && !spriteLoadError ? getSpriteLoader() : null;
+      renderSprites && !spriteLoadError ? getSpriteLoader() : null;
 
     mapLogger.debug("Building aircraft markers", {
-      useSprites,
+      useSprites: renderSprites,
       spriteLoadError,
       spriteLoaderPresent: spriteLoader !== null,
       spriteLoaderReady: spriteLoader?.isLoaded() ?? false,
@@ -462,6 +464,11 @@ export function AircraftMarkers({
         decoderType,
         groundAltitudeThreshold,
       );
+      const outlineColor = getAircraftOutlineColor(
+        aircraft.positionSource,
+        aircraft.hasMessages,
+        decoderType,
+      );
 
       // Generate SVG icon (always generate as fallback)
       const iconData = svgShapeToURI(
@@ -469,6 +476,7 @@ export function AircraftMarkers({
         0.5,
         scale * 1.5 * markerSizeScale,
         color,
+        outlineColor,
       );
 
       // Sprite data (if using sprites)
@@ -478,7 +486,7 @@ export function AircraftMarkers({
       let spriteFrames: number[] | undefined;
       let spriteFrameTime: number | undefined;
 
-      if (useSprites && !spriteLoadError && spriteLoader?.isLoaded()) {
+      if (renderSprites && !spriteLoadError && spriteLoader?.isLoaded()) {
         // Get sprite for this aircraft
         const categoryCode = mapCategoryToSpriteCode(aircraft.category);
         let spriteResult = spriteLoader.getSprite(aircraft.type, categoryCode);
@@ -571,7 +579,7 @@ export function AircraftMarkers({
         }
       }
 
-      if (markers.length === 0 && useSprites) {
+      if (markers.length === 0 && renderSprites) {
         mapLogger.debug("First marker sprite data", {
           spriteName,
           hasSpritePosition: !!spritePosition,
@@ -622,7 +630,7 @@ export function AircraftMarkers({
   }, [
     filteredPairedAircraft,
     readMessageUids,
-    useSprites,
+    renderSprites,
     colorByDecoder,
     groundAltitudeThreshold,
     spriteLoadError,
@@ -760,7 +768,7 @@ export function AircraftMarkers({
               data-position-source={markerData.aircraft.positionSource}
               style={{ "--marker-z": markerZ } as React.CSSProperties}
             >
-              {useSprites && markerData.spritePosition ? (
+              {renderSprites && markerData.spritePosition ? (
                 // Sprite rendering - use AnimatedSprite for multi-frame, static button otherwise
                 markerData.spriteFrames &&
                 markerData.spriteFrames.length > 1 ? (
@@ -869,6 +877,10 @@ export function AircraftMarkers({
                     } ${markerData.hasUnreadMessages ? "aircraft-marker--unread" : ""} ${
                       followedAircraftHex === markerData.hex
                         ? "aircraft-marker--followed"
+                        : ""
+                    } ${
+                      markerData.aircraft.hasAlerts
+                        ? "aircraft-marker--alert"
                         : ""
                     }`}
                     style={

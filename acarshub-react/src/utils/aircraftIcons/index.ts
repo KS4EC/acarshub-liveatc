@@ -32,7 +32,9 @@
 export type { ShapeDefinition } from "./data";
 export {
   getAircraftColor,
+  getAircraftOutlineColor,
   getBaseMarker,
+  getDump1090AltitudeColor,
   type SVGResult,
   shouldRotate,
   svgShapeToURI,

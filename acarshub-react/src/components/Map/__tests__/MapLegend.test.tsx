@@ -93,17 +93,22 @@ describe("MapLegend", () => {
   });
 
   describe("colour-mode branch (colorByDecoder=false, default)", () => {
-    it("renders the legacy 'Aircraft with ACARS messages' item and NOT the per-decoder items", async () => {
+    it("renders altitude and source-outline items but not per-decoder fill items", async () => {
       const user = userEvent.setup();
       setColorByDecoder(false);
       render(<MapLegend />);
 
       await user.click(screen.getByRole("button", { name: /show legend/i }));
 
+      expect(screen.getByText(/Altitude: orange/)).toBeInTheDocument();
+      expect(screen.getByText("Unknown altitude")).toBeInTheDocument();
+      expect(screen.getByText("Black outline: ADS-B only")).toBeInTheDocument();
       expect(
-        screen.getByText("Aircraft with ACARS messages"),
+        screen.getByText("Cyan outline: ACARS-derived position"),
       ).toBeInTheDocument();
-      // Per-decoder items must NOT appear when colorByDecoder is false
+      expect(
+        screen.getByText(/Colored outline: ADS-B position/),
+      ).toBeInTheDocument();
       expect(screen.queryByText("ACARS messages")).not.toBeInTheDocument();
       expect(screen.queryByText("VDLM messages")).not.toBeInTheDocument();
       expect(screen.queryByText("HFDL messages")).not.toBeInTheDocument();
@@ -113,7 +118,7 @@ describe("MapLegend", () => {
   });
 
   describe("colour-mode branch (colorByDecoder=true)", () => {
-    it("renders all five per-decoder items and NOT the legacy item", async () => {
+    it("renders all five per-decoder items and not the altitude scale", async () => {
       const user = userEvent.setup();
       setColorByDecoder(true);
       render(<MapLegend />);
@@ -125,10 +130,7 @@ describe("MapLegend", () => {
       expect(screen.getByText("HFDL messages")).toBeInTheDocument();
       expect(screen.getByText("IMSL messages")).toBeInTheDocument();
       expect(screen.getByText("IRDM messages")).toBeInTheDocument();
-      // Legacy item must NOT appear
-      expect(
-        screen.queryByText("Aircraft with ACARS messages"),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText(/Altitude: orange/)).not.toBeInTheDocument();
     });
 
     it("renders the per-decoder swatches with the expected per-type modifier classes", async () => {
@@ -157,8 +159,8 @@ describe("MapLegend", () => {
     });
   });
 
-  describe("always-present items", () => {
-    it("always renders the alert, ground, and default items regardless of colour mode", async () => {
+  describe("shared and decoder-only items", () => {
+    it("always renders the alert and ground items", async () => {
       const user = userEvent.setup();
       render(<MapLegend />);
 
@@ -166,11 +168,14 @@ describe("MapLegend", () => {
 
       expect(screen.getByText("Aircraft with alerts")).toBeInTheDocument();
       expect(screen.getByText(/Aircraft on ground/)).toBeInTheDocument();
-      expect(screen.getByText("Aircraft with no messages")).toBeInTheDocument();
+      expect(
+        screen.queryByText("Aircraft with no messages"),
+      ).not.toBeInTheDocument();
     });
 
     it("interpolates the configured groundAltitudeThreshold into the ground-aircraft label", async () => {
       const user = userEvent.setup();
+      setColorByDecoder(true);
       setGroundAltitudeThreshold(1234);
       render(<MapLegend />);
 
@@ -184,6 +189,7 @@ describe("MapLegend", () => {
 
     it("reflects a different groundAltitudeThreshold value (proves the label isn't hard-coded)", async () => {
       const user = userEvent.setup();
+      setColorByDecoder(true);
       setGroundAltitudeThreshold(0);
       render(<MapLegend />);
 

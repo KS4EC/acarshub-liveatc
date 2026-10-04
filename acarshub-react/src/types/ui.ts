@@ -382,7 +382,7 @@ export interface MapSettings {
   defaultZoom: number;
   /** Use professional sprite silhouettes (true) or SVG markers (false) */
   useSprites: boolean;
-  /** Color aircraft markers by decoder type (ACARS=blue, VDLM=green, HFDL=yellow, etc.) instead of message state */
+  /** Color aircraft markers by decoder type instead of dump1090-style altitude */
   colorByDecoder: boolean;
   /** Altitude threshold (ft MSL) for "on ground" color (default: 500) */
   groundAltitudeThreshold: number;

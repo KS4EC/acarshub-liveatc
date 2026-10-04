@@ -119,38 +119,86 @@ export function MapLegend() {
               </>
             ) : (
               <>
-                {/* Legacy message state color mode */}
+                {/* Dump1090-compatible altitude mode */}
                 <div className="map-legend__item">
                   <span
-                    className="map-legend__swatch map-legend__swatch--messages"
+                    className="map-legend__swatch map-legend__swatch--altitude"
                     aria-hidden="true"
                   />
                   <span className="map-legend__label">
-                    Aircraft with ACARS messages
+                    Altitude: orange (low) through green to magenta (high)
+                  </span>
+                </div>
+
+                <div className="map-legend__item">
+                  <span
+                    className="map-legend__swatch map-legend__swatch--ground-dump1090"
+                    aria-hidden="true"
+                  />
+                  <span className="map-legend__label">Aircraft on ground</span>
+                </div>
+
+                <div className="map-legend__item">
+                  <span
+                    className="map-legend__swatch map-legend__swatch--unknown-altitude"
+                    aria-hidden="true"
+                  />
+                  <span className="map-legend__label">Unknown altitude</span>
+                </div>
+
+                <div className="map-legend__item">
+                  <span
+                    className="map-legend__swatch map-legend__swatch--outline-adsb"
+                    aria-hidden="true"
+                  />
+                  <span className="map-legend__label">Black outline: ADS-B only</span>
+                </div>
+
+                <div className="map-legend__item">
+                  <span
+                    className="map-legend__swatch map-legend__swatch--outline-acars-position"
+                    aria-hidden="true"
+                  />
+                  <span className="map-legend__label">
+                    Cyan outline: ACARS-derived position
+                  </span>
+                </div>
+
+                <div className="map-legend__item">
+                  <span
+                    className="map-legend__swatch map-legend__swatch--outline-decoder"
+                    aria-hidden="true"
+                  />
+                  <span className="map-legend__label">
+                    Colored outline: ADS-B position with decoder messages
                   </span>
                 </div>
               </>
             )}
 
-            <div className="map-legend__item">
-              <span
-                className="map-legend__swatch map-legend__swatch--ground"
-                aria-hidden="true"
-              />
-              <span className="map-legend__label">
-                Aircraft on ground (&le;{groundAltitudeThreshold} ft MSL)
-              </span>
-            </div>
+            {colorByDecoder && (
+              <>
+                <div className="map-legend__item">
+                  <span
+                    className="map-legend__swatch map-legend__swatch--ground"
+                    aria-hidden="true"
+                  />
+                  <span className="map-legend__label">
+                    Aircraft on ground (&le;{groundAltitudeThreshold} ft MSL)
+                  </span>
+                </div>
 
-            <div className="map-legend__item">
-              <span
-                className="map-legend__swatch map-legend__swatch--default"
-                aria-hidden="true"
-              />
-              <span className="map-legend__label">
-                Aircraft with no messages
-              </span>
-            </div>
+                <div className="map-legend__item">
+                  <span
+                    className="map-legend__swatch map-legend__swatch--default"
+                    aria-hidden="true"
+                  />
+                  <span className="map-legend__label">
+                    Aircraft with no messages
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

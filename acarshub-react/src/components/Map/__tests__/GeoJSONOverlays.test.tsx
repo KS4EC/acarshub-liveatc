@@ -57,6 +57,7 @@ const getTestSettings = (overrides?: Partial<UserSettings>): UserSettings => ({
     defaultCenterLon: 0,
     defaultZoom: 7,
     showOnlyAcars: false,
+    showOnlyAcarsPositions: false,
     showDatablocks: true,
     showExtendedDatablocks: false,
     showNexrad: false,

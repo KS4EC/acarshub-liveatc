@@ -32,6 +32,7 @@ function makeAircraft(overrides: Partial<PairedAircraft> = {}): PairedAircraft {
     alertCount: 0,
     decoderTypes: [],
     ...overrides,
+    positionSource: overrides.positionSource ?? "adsb",
   };
 }
 

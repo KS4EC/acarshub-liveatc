@@ -38,6 +38,7 @@ function makeAircraft(overrides: Partial<PairedAircraft> = {}): PairedAircraft {
     matchStrategy: "none",
     decoderTypes: [],
     ...overrides,
+    positionSource: overrides.positionSource ?? "adsb",
   };
 }
 
