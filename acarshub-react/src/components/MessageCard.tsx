@@ -24,6 +24,7 @@ import {
   highlightMatchedText,
   parseAndFormatLibacars,
 } from "../utils/decoderUtils";
+import { getStationDisplayName } from "../utils/stationDisplayName";
 import { ensureHexFormat } from "../utils/stringUtils";
 
 interface MessageCardProps {
@@ -103,7 +104,9 @@ export const MessageCard = memo(
               {message.message_type || "UNKNOWN"}
             </span>
             {message.station_id && (
-              <span className="message-station">{message.station_id}</span>
+              <span className="message-station">
+                {getStationDisplayName(message.station_id)}
+              </span>
             )}
           </div>
           <div className="message-card__timestamp">{formattedTimestamp}</div>

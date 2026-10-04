@@ -293,6 +293,31 @@ describe("MessageFilters", () => {
       ).toBeInTheDocument();
     });
 
+    it("shows public aliases while retaining station IDs as filter values", async () => {
+      const user = userEvent.setup();
+      const onSelectedStationIdsChange = vi.fn();
+      render(
+        <MessageFilters
+          {...makeProps({
+            stationIds: [
+              "kpbi2-2h1r-acars-pi5",
+              "LiveATC-Test-130.025",
+            ],
+            onSelectedStationIdsChange,
+          })}
+        />,
+      );
+
+      await user.click(screen.getByRole("button", { name: /^Stations/ }));
+      const dialog = screen.getByRole("dialog");
+      await user.click(within(dialog).getByRole("checkbox", { name: "KPBI" }));
+
+      expect(within(dialog).getByText("8A7")).toBeInTheDocument();
+      expect(onSelectedStationIdsChange).toHaveBeenCalledWith([
+        "kpbi2-2h1r-acars-pi5",
+      ]);
+    });
+
     it("toggling an unselected station ADDS it (immutable, append at end)", async () => {
       const user = userEvent.setup();
       const onSelectedStationIdsChange = vi.fn();

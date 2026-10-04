@@ -16,6 +16,7 @@
 
 import { memo, useCallback, useEffect, useState } from "react";
 import type { Labels } from "../types";
+import { getStationDisplayName } from "../utils/stationDisplayName";
 import { Button } from "./Button";
 import { Modal } from "./Modal";
 import { Toggle } from "./Toggle";
@@ -255,7 +256,7 @@ export const MessageFilters = memo(
                         className="station-filter-item__label"
                       >
                         <span className="station-filter-item__id">
-                          {stationId}
+                          {getStationDisplayName(stationId)}
                         </span>
                       </label>
                       <input

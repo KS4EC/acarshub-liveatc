@@ -263,6 +263,22 @@ describe("MessageCard", () => {
       expect(screen.getByText("TEST-ACARS")).toBeInTheDocument();
     });
 
+    it("renders the public alias for a known receiver hostname", () => {
+      render(
+        <MessageCard
+          message={{
+            ...simpleAcarsMessage,
+            station_id: "kpbi2-2h1r-acars-pi5",
+          }}
+        />,
+      );
+
+      expect(screen.getByText("KPBI")).toBeInTheDocument();
+      expect(
+        screen.queryByText("kpbi2-2h1r-acars-pi5"),
+      ).not.toBeInTheDocument();
+    });
+
     it("renders timestamp", () => {
       render(<MessageCard message={simpleAcarsMessage} />);
 
