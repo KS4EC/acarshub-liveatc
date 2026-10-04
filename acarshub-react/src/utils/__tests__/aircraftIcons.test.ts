@@ -199,6 +199,16 @@ describe("svgShapeToURI", () => {
     expect(decoded).toContain('stroke="#00ffff"');
   });
 
+  it("adds a dark contrast keyline outside the source-colored outline", () => {
+    const result = svgShapeToURI("airliner", 0.5, 1, "#55ff55", "#00ffff");
+    const decoded = atob(result.svg.replace("data:image/svg+xml;base64,", ""));
+    expect(decoded).toContain('fill="none" stroke="#111827"');
+    expect(decoded).toContain('stroke-width="3.2"');
+    expect(decoded.indexOf('stroke="#111827"')).toBeLessThan(
+      decoded.indexOf('stroke="#00ffff"'),
+    );
+  });
+
   it("returns a valid base64-decodable payload containing svg tag", () => {
     const result = svgShapeToURI("airliner");
     const base64 = result.svg.replace("data:image/svg+xml;base64,", "");

@@ -155,7 +155,11 @@ export function svgShapeToURI(
   // Add main path(s)
   const paths = Array.isArray(shape.path) ? shape.path : [shape.path || ""];
   for (const path of paths) {
-    svg += `<path fill="${color}" stroke="${strokeColor}" stroke-width="${2 * finalStrokeWidth}" paint-order="stroke" d="${path}"/>`;
+    // Draw a neutral outer keyline below the source-colored outline. Bright
+    // dump1090 altitude colors otherwise disappear over pale roads, terrain,
+    // and water. Keeping this separate preserves the semantic source color.
+    svg += `<path fill="none" stroke="#111827" stroke-width="${2 * finalStrokeWidth + 2}" stroke-linejoin="round" stroke-linecap="round" d="${path}"/>`;
+    svg += `<path fill="${color}" stroke="${strokeColor}" stroke-width="${2 * finalStrokeWidth}" stroke-linejoin="round" stroke-linecap="round" paint-order="stroke" d="${path}"/>`;
   }
 
   // Add accent path(s) if present
