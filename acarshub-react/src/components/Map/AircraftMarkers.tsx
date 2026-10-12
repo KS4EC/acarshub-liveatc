@@ -218,6 +218,7 @@ export function AircraftMarkers({
   const altitudeUnit = useSettingsStore(
     (state) => state.settings.regional.altitudeUnit,
   );
+  const theme = useSettingsStore((state) => state.settings.appearance.theme);
   const mapSettings = useSettingsStore((state) => state.settings.map);
   const useSprites = useSettingsStore((state) => state.settings.map.useSprites);
   const colorByDecoder = useSettingsStore(
@@ -418,6 +419,10 @@ export function AircraftMarkers({
   // Prepare marker data using useMemo to avoid infinite loops
   const aircraftMarkers = useMemo(() => {
     const markers: AircraftMarkerData[] = [];
+    const keylineColor =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--color-aircraft-keyline")
+        .trim() || (theme === "mocha" ? "#cdd6f4" : "#11111b");
     const spriteLoader =
       renderSprites && !spriteLoadError ? getSpriteLoader() : null;
 
@@ -477,6 +482,7 @@ export function AircraftMarkers({
         scale * 1.5 * markerSizeScale,
         color,
         outlineColor,
+        keylineColor,
       );
 
       // Sprite data (if using sprites)
@@ -635,6 +641,7 @@ export function AircraftMarkers({
     groundAltitudeThreshold,
     spriteLoadError,
     markerSizeScale,
+    theme,
   ]);
 
   // Filter aircraft markers to only those currently visible in the viewport.

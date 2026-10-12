@@ -199,14 +199,28 @@ describe("svgShapeToURI", () => {
     expect(decoded).toContain('stroke="#00ffff"');
   });
 
-  it("adds a dark contrast keyline outside the source-colored outline", () => {
+  it("adds the supplied contrast keyline outside the source-colored outline", () => {
     const result = svgShapeToURI("airliner", 0.5, 1, "#55ff55", "#00ffff");
     const decoded = atob(result.svg.replace("data:image/svg+xml;base64,", ""));
-    expect(decoded).toContain('fill="none" stroke="#111827"');
+    expect(decoded).toContain('fill="none" stroke="#11111b"');
     expect(decoded).toContain('stroke-width="3.2"');
-    expect(decoded.indexOf('stroke="#111827"')).toBeLessThan(
+    expect(decoded.indexOf('stroke="#11111b"')).toBeLessThan(
       decoded.indexOf('stroke="#00ffff"'),
     );
+  });
+
+  it("accepts a light keyline for dark map tiles", () => {
+    const result = svgShapeToURI(
+      "airliner",
+      0.5,
+      1,
+      "hsl(300,85%,50%)",
+      "#00ffff",
+      "#cdd6f4",
+    );
+    const decoded = atob(result.svg.replace("data:image/svg+xml;base64,", ""));
+    expect(decoded).toContain('fill="hsl(300,85%,50%)"');
+    expect(decoded).toContain('fill="none" stroke="#cdd6f4"');
   });
 
   it("returns a valid base64-decodable payload containing svg tag", () => {

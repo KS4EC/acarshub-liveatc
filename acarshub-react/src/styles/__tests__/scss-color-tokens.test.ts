@@ -103,6 +103,21 @@ describe("SCSS-COLOR-01: theme-aware form-control colors", () => {
       expect(mochaBlock).toMatch(/--color-radio-thumb:/);
       expect(latteBlock).toMatch(/--color-radio-thumb:/);
     });
+
+    it("defines contrasting aircraft keylines in both theme mixins", () => {
+      const mochaBlock = mixins.match(
+        /@mixin theme-mocha\s*\{([\s\S]*?)\n\}/,
+      )?.[1];
+      const latteBlock = mixins.match(
+        /@mixin theme-latte\s*\{([\s\S]*?)\n\}/,
+      )?.[1];
+      expect(mochaBlock).toMatch(
+        /--color-aircraft-keyline:\s*#\{\$mocha-text\}/,
+      );
+      expect(latteBlock).toMatch(
+        /--color-aircraft-keyline:\s*#\{\$mocha-crust\}/,
+      );
+    });
   });
 
   describe("_live-messages.scss print rule (documented exception)", () => {

@@ -117,6 +117,7 @@ export function svgShapeToURI(
   scale = 1.0,
   color = "#ffffff",
   strokeColor = "#000000",
+  keylineColor = "#11111b",
 ): SVGResult {
   const shape = shapes[shapeName] || shapes.unknown;
 
@@ -158,7 +159,7 @@ export function svgShapeToURI(
     // Draw a neutral outer keyline below the source-colored outline. Bright
     // dump1090 altitude colors otherwise disappear over pale roads, terrain,
     // and water. Keeping this separate preserves the semantic source color.
-    svg += `<path fill="none" stroke="#111827" stroke-width="${2 * finalStrokeWidth + 2}" stroke-linejoin="round" stroke-linecap="round" d="${path}"/>`;
+    svg += `<path fill="none" stroke="${keylineColor}" stroke-width="${2 * finalStrokeWidth + 2}" stroke-linejoin="round" stroke-linecap="round" d="${path}"/>`;
     svg += `<path fill="${color}" stroke="${strokeColor}" stroke-width="${2 * finalStrokeWidth}" stroke-linejoin="round" stroke-linecap="round" paint-order="stroke" d="${path}"/>`;
   }
 
